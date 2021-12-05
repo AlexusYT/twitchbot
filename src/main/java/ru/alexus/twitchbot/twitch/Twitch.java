@@ -7,6 +7,7 @@ import java.net.SocketAddress;
 import java.util.Arrays;
 
 public class Twitch {
+	boolean running = true;
 	private static final String channelName = "alexus_xx";
 	BufferedReader input;
 	BufferedWriter output;
@@ -19,7 +20,7 @@ public class Twitch {
 
 	}
 	void run() {
-		while (true) {
+		while (running) {
 			try {
 				Socket socket = new Socket();
 				//socket.setSoTimeout(5000);
@@ -34,7 +35,7 @@ public class Twitch {
 				sendToIrc("JOIN #" + "daxtionoff");
 				sendToIrc("CAP REQ :twitch.tv/membership twitch.tv/commands twitch.tv/tags");
 				sendMsg("Привет", "alexus_xx");
-				while (true) {
+				while (running) {
 					String line;
 					while ((line = input.readLine()) != null) {
 						String[] elements = line.split(" ", 5);
@@ -57,6 +58,7 @@ public class Twitch {
 						}
 					}
 				}
+				socket.close();
 			} catch (Exception e) {
 				e.printStackTrace();
 
@@ -87,5 +89,9 @@ public class Twitch {
 		}catch (Exception e){
 			e.printStackTrace();
 		}
+	}
+
+	public void setRunning(boolean running) {
+		this.running = running;
 	}
 }
