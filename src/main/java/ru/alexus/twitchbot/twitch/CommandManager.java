@@ -23,7 +23,7 @@ public class CommandManager {
 		addCommand(new String[]{"привет", "ку", "hello", "hi", "privet"}, "подоровться с ботом", new HelloCmd());
 		addCommand(new String[]{"помощь", "help"}, "показать информацию по указанной команде", new HelpCmd());
 		addCommand(new String[]{"измерить", "длина", "measure", "length"}, "измерить длину какого-либо существительного", new MeasureCmd());
-		addCommand(new String[]{"stop"}, "", new MeasureCmd());
+		addCommand(new String[]{"stop"}, "", new StopCmd());
 
 	}
 	static void addCommand(String[] aliases, String desc, ICommand execute){
