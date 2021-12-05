@@ -9,6 +9,7 @@ public class StopCmd implements ICommand {
 	public String execute(Twitch twitch, String alias, String text, MsgTags tags) {
 		if(!tags.getDisplayName().equals("Alexus_XX")) return "{.caller}, ты не имеешь права мне указывать!";
 		twitch.setRunning(false);
+		System.exit(1);
 		return "Всем удачи и всем пока! Squid1 Squid2 Squid3 Squid2 Squid4 ";
 	}
 }

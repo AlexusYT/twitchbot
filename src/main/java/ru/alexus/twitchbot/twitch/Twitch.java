@@ -30,7 +30,7 @@ public class Twitch {
 				input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 				output = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
 				sendToIrc("PASS oauth:qnqb5c3by68itlapde0rh463vh5kq2");
-				sendToIrc("NICK the_space_bot");
+				sendToIrc("NICK TheBuggyBot");
 				sendToIrc("JOIN #" + channelName);
 				sendToIrc("JOIN #" + "daxtionoff");
 				sendToIrc("CAP REQ :twitch.tv/membership twitch.tv/commands twitch.tv/tags");
