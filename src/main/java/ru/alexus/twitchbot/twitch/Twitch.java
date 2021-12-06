@@ -4,20 +4,32 @@ import java.io.*;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.util.Arrays;
 
 public class Twitch {
 	boolean running = true;
+	boolean connectedToDB = false;
 	private static final String channelName = "alexus_xx";
 	BufferedReader input;
 	BufferedWriter output;
+	Connection dbConnection;
 	public static void startBot(){
 		System.out.println("Twitch bot thread started");
 		new Twitch().run();
 		System.out.println("Twitch bot thread ended");
 	}
 	private Twitch(){
-
+		System.out.println("Connecting to database");
+		try {
+			dbConnection = DriverManager.getConnection("jdbc:mysql://slymcdb.cusovblh0zzb.eu-west-2.rds.amazonaws.com", "admin", "nBeXaR8bLByWwyF");
+			connectedToDB = true;
+		} catch (SQLException e) {
+			connectedToDB = false;
+			e.printStackTrace();
+		}
 	}
 	void run() {
 		while (running) {
@@ -35,9 +47,12 @@ public class Twitch {
 				sendToIrc("JOIN #" + "daxtionoff");
 				sendToIrc("CAP REQ :twitch.tv/membership twitch.tv/commands twitch.tv/tags");
 				sendMsg("Привет", "alexus_xx");
+				if(!connectedToDB){
+					sendMsg("Не удалось подключиться к базе данных", "alexus_xx");
+				}
 				while (running) {
 					String line;
-					while ((line = input.readLine()) != null) {
+					while ((line = input.readLine()) != null&&running) {
 						String[] elements = line.split(" ", 5);
 						if (elements[0].equals("PING")) {
 							System.out.println("Server requested ping");
@@ -56,6 +71,7 @@ public class Twitch {
 							default:
 								System.out.println(Arrays.toString(elements));
 						}
+
 					}
 				}
 				socket.close();
@@ -64,7 +80,8 @@ public class Twitch {
 
 			}
 			try {
-				Thread.sleep(10000);
+				if(running)
+					Thread.sleep(10000);
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
