@@ -49,7 +49,8 @@ public class Twitch {
 				sendMsg("Привет", "alexus_xx");
 				if(!connectedToDB){
 					sendMsg("Не удалось подключиться к базе данных", "alexus_xx");
-				}
+				}else
+					sendMsg("Успешное подключение к баез данных", "alexus_xx");
 				while (running) {
 					String line;
 					while ((line = input.readLine()) != null&&running) {
