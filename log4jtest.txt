@@ -1,0 +1,34 @@
+2021-12-08 20:02:01,728 [Thread-0] INFO simpleTestLogger - message of info level shoud be output properly
+2021-12-08 20:02:01,731 [Thread-0] ERROR simpleTestLogger - error message
+2021-12-08 20:02:01,731 [Thread-0] INFO simpleTestLogger - HELLO_WORLD
+2021-12-08 20:02:01,731 [Thread-0] INFO simpleTestLogger - Twitch bot thread started
+2021-12-08 20:02:04,175 [Thread-0] INFO simpleTestLogger - Sending to IRC: PASS oauth:qnqb5c3by68itlapde0rh463vh5kq2
+2021-12-08 20:02:04,176 [Thread-0] INFO simpleTestLogger - Sending to IRC: NICK TheBuggyBot
+2021-12-08 20:02:04,176 [Thread-0] INFO simpleTestLogger - Sending to IRC: CAP REQ :twitch.tv/membership twitch.tv/commands twitch.tv/tags
+2021-12-08 20:02:04,177 [Thread-0] INFO simpleTestLogger - Joining channel: daxtionoff
+2021-12-08 20:02:04,177 [Thread-0] INFO simpleTestLogger - Joining channel: alexus_xx
+2021-12-08 20:02:04,643 [Thread-0] INFO simpleTestLogger - Line read: :tmi.twitch.tv 001 thebuggybot :Welcome, GLHF!
+2021-12-08 20:02:04,643 [Thread-0] INFO simpleTestLogger - Line read: :tmi.twitch.tv 002 thebuggybot :Your host is tmi.twitch.tv
+2021-12-08 20:02:04,643 [Thread-0] INFO simpleTestLogger - Line read: :tmi.twitch.tv 003 thebuggybot :This server is rather new
+2021-12-08 20:02:04,643 [Thread-0] INFO simpleTestLogger - Line read: :tmi.twitch.tv 004 thebuggybot :-
+2021-12-08 20:02:04,643 [Thread-0] INFO simpleTestLogger - Line read: :tmi.twitch.tv 375 thebuggybot :-
+2021-12-08 20:02:04,643 [Thread-0] INFO simpleTestLogger - Line read: :tmi.twitch.tv 372 thebuggybot :You are in a maze of twisty passages, all alike.
+2021-12-08 20:02:04,643 [Thread-0] INFO simpleTestLogger - Line read: :tmi.twitch.tv 376 thebuggybot :>
+2021-12-08 20:02:04,643 [Thread-0] INFO simpleTestLogger - Line read: :tmi.twitch.tv CAP * ACK :twitch.tv/membership twitch.tv/commands twitch.tv/tags
+2021-12-08 20:02:04,908 [Thread-0] INFO simpleTestLogger - Line read: :thebuggybot!thebuggybot@thebuggybot.tmi.twitch.tv JOIN #daxtionoff
+2021-12-08 20:02:04,909 [Thread-0] INFO simpleTestLogger - Line read: :thebuggybot.tmi.twitch.tv 353 thebuggybot = #daxtionoff :thebuggybot
+2021-12-08 20:02:04,909 [Thread-0] INFO simpleTestLogger - Line read: :thebuggybot.tmi.twitch.tv 366 thebuggybot #daxtionoff :End of /NAMES list
+2021-12-08 20:02:04,909 [Thread-0] INFO simpleTestLogger - Line read: @badge-info=;badges=moderator/1;color=#5F9EA0;display-name=TheBuggyBot;emote-sets=0;mod=1;subscriber=0;user-type=mod :tmi.twitch.tv USERSTATE #daxtionoff
+2021-12-08 20:02:04,909 [Thread-0] INFO simpleTestLogger - Line read: @emote-only=0;followers-only=0;r9k=0;rituals=0;room-id=403234476;slow=0;subs-only=0 :tmi.twitch.tv ROOMSTATE #daxtionoff
+2021-12-08 20:02:04,910 [Thread-0] INFO simpleTestLogger - Line read: :thebuggybot!thebuggybot@thebuggybot.tmi.twitch.tv JOIN #alexus_xx
+2021-12-08 20:02:04,911 [Thread-0] INFO simpleTestLogger - Line read: :thebuggybot.tmi.twitch.tv 353 thebuggybot = #alexus_xx :thebuggybot
+2021-12-08 20:02:04,911 [Thread-0] INFO simpleTestLogger - Line read: :thebuggybot.tmi.twitch.tv 366 thebuggybot #alexus_xx :End of /NAMES list
+2021-12-08 20:02:04,911 [Thread-0] INFO simpleTestLogger - Line read: @badge-info=;badges=moderator/1;color=#5F9EA0;display-name=TheBuggyBot;emote-sets=0;mod=1;subscriber=0;user-type=mod :tmi.twitch.tv USERSTATE #alexus_xx
+2021-12-08 20:02:04,911 [Thread-0] INFO simpleTestLogger - Line read: @emote-only=0;followers-only=-1;r9k=0;rituals=0;room-id=134945794;slow=0;subs-only=0 :tmi.twitch.tv ROOMSTATE #alexus_xx
+2021-12-08 20:02:58,928 [Thread-0] INFO simpleTestLogger - Line read: :alexus_xx!alexus_xx@alexus_xx.tmi.twitch.tv JOIN #daxtionoff
+2021-12-08 20:02:58,928 [Thread-0] INFO simpleTestLogger - Line read: :kaxips06!kaxips06@kaxips06.tmi.twitch.tv JOIN #daxtionoff
+2021-12-08 20:02:58,928 [Thread-0] INFO simpleTestLogger - Line read: :painfullest!painfullest@painfullest.tmi.twitch.tv JOIN #daxtionoff
+2021-12-08 20:02:59,382 [Thread-0] INFO simpleTestLogger - Line read: :alexus_xx!alexus_xx@alexus_xx.tmi.twitch.tv JOIN #alexus_xx
+2021-12-08 20:03:53,177 [Thread-0] INFO simpleTestLogger - Line read: :anotherttvviewer!anotherttvviewer@anotherttvviewer.tmi.twitch.tv JOIN #daxtionoff
+2021-12-08 20:03:53,177 [Thread-0] INFO simpleTestLogger - Line read: :nightbot!nightbot@nightbot.tmi.twitch.tv JOIN #daxtionoff
+2021-12-08 20:05:51,776 [Thread-0] INFO simpleTestLogger - Line read: :kaxips06!kaxips06@kaxips06.tmi.twitch.tv PART #daxtionoff

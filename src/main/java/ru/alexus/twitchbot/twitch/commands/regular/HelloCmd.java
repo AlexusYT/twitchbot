@@ -1,10 +1,10 @@
-package ru.alexus.twitchbot.twitch.commands;
+package ru.alexus.twitchbot.twitch.commands.regular;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.text.WordUtils;
-import ru.alexus.twitchbot.twitch.ICommand;
-import ru.alexus.twitchbot.twitch.MsgTags;
-import ru.alexus.twitchbot.twitch.Twitch;
+import ru.alexus.twitchbot.twitch.CommandInfo;
+import ru.alexus.twitchbot.twitch.commands.EnumAccessLevel;
+import ru.alexus.twitchbot.twitch.commands.ICommand;
+import ru.alexus.twitchbot.twitch.objects.MsgTags;
 
 import java.util.LinkedList;
 
@@ -26,10 +26,20 @@ public class HelloCmd implements ICommand {
 
 	}
 	@Override
-	public String execute(Twitch twitch, String alias, String text, MsgTags tags) {
-		LinkedList<String> messages = isRussian(alias) ? messagesRu : messagesEn;
+	public String execute(CommandInfo alias, String text, MsgTags tags) {
+		LinkedList<String> messages = isRussian(alias.calledAlias) ? messagesRu : messagesEn;
 		if(!text.isEmpty())
 			return getRandomText(messages).replaceAll("\\{\\.caller}", WordUtils.capitalizeFully(text));
 		return getRandomText(messages);
+	}
+
+	@Override
+	public String getDescription() {
+		return "поздоровться с ботом";
+	}
+
+	@Override
+	public String[] getAliases() {
+		return new String[]{"hello", "hi", "privet", "привет", "ку"};
 	}
 }

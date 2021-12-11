@@ -1,115 +1,110 @@
 package ru.alexus.twitchbot.twitch;
 
+
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.core.config.Configurator;
+import org.apache.logging.log4j.core.config.builder.api.ConfigurationBuilder;
+import org.apache.logging.log4j.core.config.builder.api.ConfigurationBuilderFactory;
+import org.apache.logging.log4j.core.config.builder.impl.BuiltConfiguration;
+import org.apache.logging.log4j.core.layout.PatternLayout;
+
+import org.apache.tomcat.util.json.JSONParser;
+import org.apache.tomcat.util.json.ParseException;
+import ru.alexus.twitchbot.Utils;
+import ru.alexus.twitchbot.twitch.commands.EnumAccessLevel;
+import ru.alexus.twitchbot.twitch.objects.MsgTags;
+import ru.alexus.twitchbot.twitch.objects.User;
+
 import java.io.*;
 import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.net.SocketAddress;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
-import java.util.Arrays;
+import java.net.URL;
+import java.net.URLConnection;
+import java.util.*;
 
-public class Twitch {
-	boolean running = true;
-	boolean connectedToDB = false;
-	private static final String channelName = "alexus_xx";
-	BufferedReader input;
-	BufferedWriter output;
-	Connection dbConnection;
+
+public class Twitch extends TwitchHelper {
+	public static final String databaseUrl = "jdbc:mysql://slymcdb.cusovblh0zzb.eu-west-2.rds.amazonaws.com";
+	public static final String databaseLogin = "admin";
+	public static final String databasePass = "nBeXaR8bLByWwyF";
+
+
+
 	public static void startBot(){
-		System.out.println("Twitch bot thread started");
-		new Twitch().run();
-		System.out.println("Twitch bot thread ended");
-	}
-	private Twitch(){
-		System.out.println("Connecting to database");
-		try {
-			dbConnection = DriverManager.getConnection("jdbc:mysql://slymcdb.cusovblh0zzb.eu-west-2.rds.amazonaws.com", "admin", "nBeXaR8bLByWwyF");
-			connectedToDB = true;
-		} catch (SQLException e) {
-			connectedToDB = false;
-			e.printStackTrace();
-		}
-	}
-	void run() {
-		while (running) {
-			try {
-				Socket socket = new Socket();
-				//socket.setSoTimeout(5000);
-				socket.connect(new InetSocketAddress("irc.twitch.tv", 6667));
-				if (socket.isConnected())
-					System.out.println("Connected");
-				input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-				output = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
-				sendToIrc("PASS oauth:qnqb5c3by68itlapde0rh463vh5kq2");
-				sendToIrc("NICK TheBuggyBot");
-				sendToIrc("JOIN #" + channelName);
-				sendToIrc("JOIN #" + "daxtionoff");
-				sendToIrc("CAP REQ :twitch.tv/membership twitch.tv/commands twitch.tv/tags");
-				sendMsg("Привет", "alexus_xx");
-				if(!connectedToDB){
-					sendMsg("Не удалось подключиться к базе данных", "alexus_xx");
-				}else
-					sendMsg("Успешное подключение к баез данных", "alexus_xx");
-				while (running) {
-					String line;
-					while ((line = input.readLine()) != null&&running) {
-						String[] elements = line.split(" ", 5);
-						if (elements[0].equals("PING")) {
-							System.out.println("Server requested ping");
-							sendToIrc("PONG " + elements[1]);
-							continue;
-						}
-						switch (elements[2]) {
-							case "PRIVMSG":
-
-
-								String message = elements[4].substring(1);
-								MsgTags tags = new MsgTags(elements[0]);
-								//System.out.println(channel+": "+tags.getDisplayName()+" sent message: "+message);
-								CommandManager.executeCommand(message, tags, elements[3].substring(1), this);
-								break;
-							default:
-								System.out.println(Arrays.toString(elements));
-						}
-
-					}
-				}
-				socket.close();
-			} catch (Exception e) {
-				e.printStackTrace();
-
+		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+			log.info("Shutting down");
+			for (Channel channel : Channels.getChannels().values()) {
+				channel.saveTotalMessagesToDB();
+				channel.saveBuggycoinsToDB();
 			}
+
+		}));
+
+		log.info("Twitch bot thread started");
+		new Thread(TwitchHelper::senderThread).start();
+		new Thread(TwitchHelper::botListUpdater).start();
+		new Thread(TwitchHelper::connectionMonitor).start();
+		while (!shutdown){
 			try {
-				if(running)
-					Thread.sleep(10000);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
+				connectToTwitch();
+				run();
+			}catch (Exception e){
+				log.error("Bot crashed. Restarting", e);
+
+				try {
+					Thread.sleep(1000);
+				} catch (InterruptedException ignored) {}
 			}
 		}
-
-
+		log.info("Twitch bot thread ended");
 	}
 
-	public void sendToIrc(String text) throws IOException {
-		System.out.println("Sending to IRC: "+text);
-		output.write(text+"\n");
-		output.flush();
-	}
-	public void sendMsg(String text) {
-		sendMsg(text, channelName);
-	}
-	public void sendMsg(String text, String channel) {
-		try {
-			System.out.println("Sending to channel " + channel + ": " + text);
-			output.write("PRIVMSG #" + channel + " :" + text + "\n");
-			output.flush();
-		}catch (Exception e){
-			e.printStackTrace();
+
+	public static void onPrivMsg(MsgTags tags, User user, String message){
+		if(tags.channel.registerUser(user)){
+			tags.channel.addUserToCurrentSession(user);
+		}else{
+			if(tags.channel.enabled)
+				Twitch.log.info("Failed to add user "+user.getDisplayName());
 		}
+		if(tags.isFirstMsg())
+			Twitch.sendMsg(Utils.replaceVars("Чатик, поздоровайтесь с {.caller}. Он первый раз на нашем канале!", tags, null), tags.channel);
+		else if(user.messagesInSession==-1&&user.getLevel()!= EnumAccessLevel.BROADCASTER){
+			CommandManager.executeCommand("!привет", tags);
+		}
+		log.info(user.getDisplayName()+": "+message);
+		try {
+
+			CommandManager.executeCommand(message, tags);
+		} catch (Exception e) {
+			e.printStackTrace();
+			sendMsg("Возникла ошибка при выполнении команды " + message, tags.channel);
+		}
+		if(user.messagesInSession!=-1) user.messagesInSession++;
+		if(!tags.channel.enabled) return;
+		User u = tags.channel.getUserById(user.getUserId());
+
+		/*if(u.getBuggycoins() >= user.getBuggycoins()) */user.setBuggycoins(u.getBuggycoins());
+						/*else{
+							System.out.println("test");
+						}*/
+		if(u.messagesInSession > user.messagesInSession) user.messagesInSession = u.getBuggycoins();
+		tags.channel.setUserById(user.getUserId(), user);
 	}
 
-	public void setRunning(boolean running) {
-		this.running = running;
+
+	public static void shutdownBot() {
+		Twitch.shutdown = true;
+	}
+
+
+	public static void onLeft(String user, String channel) {
+		log.info("User "+user+" left "+channel);
+	}
+
+	public static void onJoin(String user, String channel){
+		log.info("User "+user+" joined "+channel);
 	}
 }

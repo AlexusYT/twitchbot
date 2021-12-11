@@ -18,6 +18,8 @@ package ru.alexus.twitchbot;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
@@ -46,11 +48,12 @@ public class Main {
 	private DataSource dataSource;
 
 	public static void main(String[] args) throws Exception {
-		System.out.println("Starting web-server");
+		if(Thread.currentThread().getName().equals("main")){
+
+			Thread thread = new Thread(Twitch::startBot);
+			thread.start();
+		}
 		SpringApplication.run(Main.class, args);
-		System.out.println("Starting twitch bot thread");
-		Thread thread = new Thread(Twitch::startBot);
-		thread.start();
 	}
 
 	//http://localhost

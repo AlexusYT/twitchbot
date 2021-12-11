@@ -1,18 +1,15 @@
-package ru.alexus.twitchbot.twitch.commands;
+package ru.alexus.twitchbot.twitch.commands.regular;
 
 import ru.alexus.twitchbot.Utils;
-import ru.alexus.twitchbot.twitch.ICommand;
-import ru.alexus.twitchbot.twitch.MsgTags;
-import ru.alexus.twitchbot.twitch.Twitch;
-
-import java.util.Arrays;
-import java.util.Locale;
-import java.util.Random;
+import ru.alexus.twitchbot.twitch.CommandInfo;
+import ru.alexus.twitchbot.twitch.commands.EnumAccessLevel;
+import ru.alexus.twitchbot.twitch.commands.ICommand;
+import ru.alexus.twitchbot.twitch.objects.MsgTags;
 
 public class MeasureCmd implements ICommand {
 
 	@Override
-	public String execute(Twitch twitch, String alias, String text, MsgTags tags) {
+	public String execute(CommandInfo alias, String text, MsgTags tags) {
 
 		int val = Utils.random.nextInt(40)-2;
 		int ed = Utils.random.nextInt(3);
@@ -22,7 +19,6 @@ public class MeasureCmd implements ICommand {
 		if(ed==2) s=" км";
 
 		String word = text.split(" ")[0];
-		if(!Utils.isRussian(word)) return "{CALLER}, длина "+word + " равна "+ val + s;
 		word = word.replaceAll("ё", "е");
 		switch (word) {
 			case "я":
@@ -70,9 +66,8 @@ public class MeasureCmd implements ICommand {
 		}
 
 		char lastChar = word.charAt(word.length() - 1);
+		String tmp = word.substring(0, word.length() - 1);
 		if(is_vowel(lastChar)){
-
-			String tmp = word.substring(0, word.length() - 1);
 			if (lastChar == 'а')
 				if (is_special(word.charAt(word.length() - 2))) {
 					word = tmp + "и";
@@ -82,12 +77,25 @@ public class MeasureCmd implements ICommand {
 			else {
 				word = tmp + "и";
 			}
-		}else {
-			word = word+"а";
+		}else if(lastChar=='ь'){
+
+			word = tmp + "и";
+			//word = word+"а";
 		}
 
-		return "{CALLER}, длина "+word + " равна "+ val + s;
+		return "{.caller}, длина "+word + " равна "+ val + s;
 	}
+
+	@Override
+	public String getDescription() {
+		return "измерить длину какого-либо существительного";
+	}
+
+	@Override
+	public String[] getAliases() {
+		return new String[]{"measure", "length", "измерить", "длина"};
+	}
+
 	private static boolean is_special(char ch)
 	{
 		return ch == 'г' || ch == 'ж' || ch == 'к' || ch == 'х' || ch == 'ч' || ch == 'ш' || ch == 'щ';
@@ -95,14 +103,9 @@ public class MeasureCmd implements ICommand {
 
 	private static boolean is_vowel(char ch)
 	{
-		if (ch == 'а' || ch == 'е' || ch == 'ё' || ch == 'и' || ch == 'о' ||
+		return ch == 'а' || ch == 'е' || ch == 'ё' || ch == 'и' || ch == 'о' ||
 				ch == 'у' || ch == 'ы' || ch == 'э' || ch == 'ю' || ch == 'я' ||
 				ch == 'А' || ch == 'Е' || ch == 'Ё' || ch == 'И' || ch == 'О' ||
-				ch == 'У' || ch == 'Ы' || ch == 'Э' || ch == 'Ю' || ch == 'Я')
-		{
-			return true;
-		}
-		else
-			return false;
+				ch == 'У' || ch == 'Ы' || ch == 'Э' || ch == 'Ю' || ch == 'Я';
 	}
 }

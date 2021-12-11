@@ -1,13 +1,13 @@
 package ru.alexus.twitchbot;
 
 import org.apache.commons.lang3.text.WordUtils;
-import ru.alexus.twitchbot.twitch.MsgTags;
+import ru.alexus.twitchbot.twitch.CommandInfo;
+import ru.alexus.twitchbot.twitch.objects.MsgTags;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Random;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class Utils {
@@ -51,9 +51,19 @@ public class Utils {
 	{caller} - caller's nick
 	{alias} - called command alias
 	 */
-	public static String replaceVars(String message, MsgTags tags, String channel, String alias){
-		message = replaceVar("caller", tags.getDisplayName(), message);
-		message = replaceVar("alias", alias, message);
+	public static String replaceVars(String message, MsgTags tags, CommandInfo alias){
+		message = replaceVar("caller", tags.getUser().getDisplayName(), message);
+		if(alias==null) return message;
+		CommandInfo mainCommand = alias.parentCommand != null ? alias.parentCommand : alias;
+		CommandInfo subCommand = null;
+		if(alias.parentCommand!=null&&alias.subCommands==null){
+			subCommand = alias;
+		}
+
+		message = replaceVar("alias", mainCommand.calledAlias, message);
+		if(subCommand!=null)
+			message = replaceVar("subalias", subCommand.calledAlias, message);
+
 		return message;
 	}
 
@@ -66,6 +76,15 @@ public class Utils {
 
 		return message;
 	}
+	public static String pluralizeMessage(int value, String one, String many, String other){
+		if(value % 10 == 1 && value != 11)
+			return value+" "+one;
+		else if(value % 10 > 1 && value % 10 < 5 && !(value >=12 && value<= 20))
+			return value+" "+many;
+		else return value+" "+other;
+
+	}
+
 
 
 }
