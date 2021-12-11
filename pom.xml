@@ -129,7 +129,9 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.7.0</version>
         <configuration>
+          <release>15</release>
           <source>15</source>
           <target>15</target>
         </configuration>
