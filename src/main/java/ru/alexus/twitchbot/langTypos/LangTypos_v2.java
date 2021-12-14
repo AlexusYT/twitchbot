@@ -4,10 +4,7 @@ import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import ru.alexus.twitchbot.twitch.Twitch;
 
-import java.io.BufferedReader;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.util.HashSet;
 import java.util.Objects;
 
@@ -138,9 +135,15 @@ public class LangTypos_v2 {
         russianDictionary = new HashSet<>();
         englishDictionary = new HashSet<>();
         new Thread(() -> {
+            ClassLoader classloader = Thread.currentThread().getContextClassLoader();
+            InputStream is = classloader.getResourceAsStream("public/rusDict-new.txt");
+            if(is==null){
+                Twitch.log.info("Null");
+            }else
+                Twitch.log.info("Not Null");
             try (BufferedReader br = new BufferedReader(new InputStreamReader(
                     Objects.requireNonNull(ClassLoader.getSystemClassLoader()
-                            .getResourceAsStream("rusDict-new.txt"))))) {
+                            .getResourceAsStream("public/rusDict-new.txt"))))) {
 
                 String line;
                 while ((line = br.readLine()) != null) {
@@ -154,7 +157,7 @@ public class LangTypos_v2 {
 
             try (BufferedReader br = new BufferedReader(new InputStreamReader(
                     Objects.requireNonNull(ClassLoader.getSystemClassLoader()
-                            .getResourceAsStream("english.txt"))))) {
+                            .getResourceAsStream("public/english.txt"))))) {
 
                 String line;
                 while ((line = br.readLine()) != null) {

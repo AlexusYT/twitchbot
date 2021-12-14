@@ -36,13 +36,26 @@ public class Main {
 		if(port==null) port = "80";
 		HttpServer server = HttpServer.create(new InetSocketAddress(Integer.parseInt(port)), 0);
 		server.createContext("/", new MyHandler());
+		server.createContext("/alexus_xx", new ChannelHandler());
+		server.createContext("/daxtionoff", new ChannelHandler());
 		server.setExecutor(null); // creates a default executor
 		server.start();
 	}
+	static class ChannelHandler implements HttpHandler {
+		@Override
+		public void handle(HttpExchange t) throws IOException {
 
+			String response = "This is the response from "+t.getHttpContext().getPath();
+			t.sendResponseHeaders(200, response.length());
+			OutputStream os = t.getResponseBody();
+			os.write(response.getBytes());
+			os.close();
+		}
+	}
 	static class MyHandler implements HttpHandler {
 		@Override
 		public void handle(HttpExchange t) throws IOException {
+
 			String response = "This is the response";
 			t.sendResponseHeaders(200, response.length());
 			OutputStream os = t.getResponseBody();
