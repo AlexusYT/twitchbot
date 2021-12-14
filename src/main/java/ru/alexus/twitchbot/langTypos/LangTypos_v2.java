@@ -142,8 +142,7 @@ public class LangTypos_v2 {
             }else
                 Twitch.log.info("Not Null");
             try (BufferedReader br = new BufferedReader(new InputStreamReader(
-                    Objects.requireNonNull(ClassLoader.getSystemClassLoader()
-                            .getResourceAsStream("public/rusDict-new.txt"))))) {
+                    Objects.requireNonNull(classloader.getResourceAsStream("public/rusDict-new.txt"))))) {
 
                 String line;
                 while ((line = br.readLine()) != null) {
@@ -156,8 +155,7 @@ public class LangTypos_v2 {
             }
 
             try (BufferedReader br = new BufferedReader(new InputStreamReader(
-                    Objects.requireNonNull(ClassLoader.getSystemClassLoader()
-                            .getResourceAsStream("public/english.txt"))))) {
+                    Objects.requireNonNull(classloader.getResourceAsStream("public/english.txt"))))) {
 
                 String line;
                 while ((line = br.readLine()) != null) {
