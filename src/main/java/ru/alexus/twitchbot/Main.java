@@ -22,14 +22,9 @@ import ru.alexus.twitchbot.twitch.Twitch;
 public class Main {
 
 	public static void main(String[] args) throws Exception {
-		if(Thread.currentThread().getName().equals("main")){
 
-			Thread thread = new Thread(Twitch::startBot);
-			thread.start();
-		}else{
-			return;
-		}
-		//SpringApplication.run(Main.class, args);
+		Thread thread = new Thread(Twitch::startBot);
+		thread.start();
 	}
 
 
