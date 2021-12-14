@@ -16,7 +16,14 @@
 
 package ru.alexus.twitchbot;
 
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpHandler;
+import com.sun.net.httpserver.HttpServer;
 import ru.alexus.twitchbot.twitch.Twitch;
+
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.InetSocketAddress;
 
 
 public class Main {
@@ -25,7 +32,22 @@ public class Main {
 
 		Thread thread = new Thread(Twitch::startBot);
 		thread.start();
+		String port = System.getenv("PORT");
+		if(port==null) port = "80";
+		HttpServer server = HttpServer.create(new InetSocketAddress(Integer.parseInt(port)), 0);
+		server.createContext("/", new MyHandler());
+		server.setExecutor(null); // creates a default executor
+		server.start();
 	}
 
-
+	static class MyHandler implements HttpHandler {
+		@Override
+		public void handle(HttpExchange t) throws IOException {
+			String response = "This is the response";
+			t.sendResponseHeaders(200, response.length());
+			OutputStream os = t.getResponseBody();
+			os.write(response.getBytes());
+			os.close();
+		}
+	}
 }
