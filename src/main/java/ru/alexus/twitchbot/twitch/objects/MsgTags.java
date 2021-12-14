@@ -18,6 +18,11 @@ public class MsgTags{
 	private int roomId;
 	private boolean firstMsg, emoteOnly;
 	private Calendar sendTime;
+	private String replyToUserDisplayName;
+	private String replyToMsgBody;
+	private String replyToMsgId;
+	private int replyToUserId = -1;
+	private String replyToUserLogin;
 	public Channel channel;
 
 	public MsgTags(String msgTags, String channelName){
@@ -31,7 +36,12 @@ public class MsgTags{
 					case "id": msgId = tagElem[1]; break;
 					case "client-nonce": clientNonce = tagElem[1]; break;
 					case "flags": flags = tagElem[1]; break;
+					case "reply-parent-display-name": replyToUserDisplayName = tagElem[1]; break;
+					case "reply-parent-msg-body": replyToMsgBody = tagElem[1]; break;
+					case "reply-parent-msg-id": replyToMsgId = tagElem[1]; break;
+					case "reply-parent-user-login": replyToUserLogin = tagElem[1]; break;
 
+					case "reply-parent-user-id": replyToUserId = Integer.parseInt(tagElem[1]); break;
 					case "room-id": roomId = Integer.parseInt(tagElem[1]); break;
 
 					case "tmi-sent-ts":
@@ -89,5 +99,29 @@ public class MsgTags{
 
 	public User getUser() {
 		return user;
+	}
+
+	public boolean isReplying() {
+		return replyToUserId!=-1;
+	}
+
+	public String getReplyToUserDisplayName() {
+		return replyToUserDisplayName;
+	}
+
+	public String getReplyToMsgBody() {
+		return replyToMsgBody;
+	}
+
+	public String getReplyToMsgId() {
+		return replyToMsgId;
+	}
+
+	public int getReplyToUserId() {
+		return replyToUserId;
+	}
+
+	public String getReplyToUserLogin() {
+		return replyToUserLogin;
 	}
 }

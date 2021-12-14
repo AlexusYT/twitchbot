@@ -1,9 +1,18 @@
 package ru.alexus.twitchbot;
 
 import org.apache.commons.lang3.text.WordUtils;
-import ru.alexus.twitchbot.twitch.CommandInfo;
+import ru.alexus.twitchbot.langTypos.LangTypos_v2;
+import ru.alexus.twitchbot.twitch.commands.CommandInfo;
+import ru.alexus.twitchbot.twitch.Profiler;
+import ru.alexus.twitchbot.twitch.WordCases;
 import ru.alexus.twitchbot.twitch.objects.MsgTags;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.URL;
+import java.net.URLConnection;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -11,15 +20,22 @@ import java.util.Random;
 import java.util.regex.Pattern;
 
 public class Utils {
+	public static LangTypos_v2 converter;
 	private static HashMap<Character, Character> charsRuEn = new HashMap<>();
 	private static HashMap<Character, Character> charsEnRu = new HashMap<>();
-	static {
-		String ruChars = "йцукенгшщзхъфывапролджэячсмитьбю.";
-		String enChars = "qwertyuiop[]asdfghjkl;'zxcvbnm,./";
+	public static void init(){
+		String ruChars = "йцукенгшщзхъфывапролджэячсмитьбю.,!\"№;%:?*()_+";
+		String enChars = "qwertyuiop[]asdfghjkl;'zxcvbnm,./?!@#$%^&*()_+";
 		for(int i = 0; i < ruChars.length(); i++){
 			charsRuEn.put(ruChars.charAt(i), enChars.charAt(i));
 			charsEnRu.put(enChars.charAt(i), ruChars.charAt(i));
 		}
+		Profiler.start("Creating LangTypos_v2");
+		converter = new LangTypos_v2(); /** создаём объект класса */
+		Profiler.endAndPrint();
+		Profiler.start("loadDictionaries");
+		converter.loadDictionaries(); /** загружаем словари */
+		Profiler.endAndPrint();
 	}
 	public static Random random = new Random();
 	private static final Pattern pattern = Pattern.compile(
@@ -52,8 +68,13 @@ public class Utils {
 	{alias} - called command alias
 	 */
 	public static String replaceVars(String message, MsgTags tags, CommandInfo alias){
+		Profiler.start("replaceVars");
 		message = replaceVar("caller", tags.getUser().getDisplayName(), message);
-		if(alias==null) return message;
+		message = replaceVar("coins", Utils.pluralizeMessageCoin(tags.getUser().getBuggycoins()), message);
+		if(alias==null){
+			Profiler.endAndPrint();
+			return message;
+		}
 		CommandInfo mainCommand = alias.parentCommand != null ? alias.parentCommand : alias;
 		CommandInfo subCommand = null;
 		if(alias.parentCommand!=null&&alias.subCommands==null){
@@ -64,6 +85,7 @@ public class Utils {
 		if(subCommand!=null)
 			message = replaceVar("subalias", subCommand.calledAlias, message);
 
+		Profiler.endAndPrint();
 		return message;
 	}
 
@@ -84,7 +106,36 @@ public class Utils {
 		else return value+" "+other;
 
 	}
+	public static String pluralizeMessageCoin(int value){
+		return Utils.pluralizeMessage(value, "коин", "коина", "коинов");
 
+	}
 
+	public static WordCases getWordCase(String word){
+		WordCases cases = new WordCases();
+		try {
+			URLConnection connection = new URL("https://sklonili.ru/"+ URLEncoder.encode(word, StandardCharsets.UTF_8)).openConnection();
+
+			BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+			String str;
+			while ((str = reader.readLine())!=null){
+				if(str.contains("в множественном числе")) break;
+				if(!(str.contains("тельный")||str.contains("Предложный"))) continue;
+				String caseStr = str.substring(str.indexOf("Склонение'>")+11);
+				caseStr = caseStr.substring(0, caseStr.indexOf("</td>"));
+				if(str.contains("Именительный")) cases.nominative = caseStr;
+				else if(str.contains("Родительный")) cases.genitive = caseStr;
+				else if(str.contains("Дательный")) cases.dative = caseStr;
+				else if(str.contains("Винительный")) cases.accusative = caseStr;
+				else if(str.contains("Творительный")) cases.instrumental = caseStr;
+				else if(str.contains("Предложный")) cases.prepositional = caseStr;
+
+			}
+
+		}catch (Exception e){
+			return null;
+		}
+		return cases;
+	}
 
 }

@@ -1,28 +1,13 @@
 package ru.alexus.twitchbot.twitch;
 
 
-import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.core.config.Configurator;
-import org.apache.logging.log4j.core.config.builder.api.ConfigurationBuilder;
-import org.apache.logging.log4j.core.config.builder.api.ConfigurationBuilderFactory;
-import org.apache.logging.log4j.core.config.builder.impl.BuiltConfiguration;
-import org.apache.logging.log4j.core.layout.PatternLayout;
-
-import org.apache.tomcat.util.json.JSONParser;
-import org.apache.tomcat.util.json.ParseException;
 import ru.alexus.twitchbot.Utils;
+import ru.alexus.twitchbot.twitch.commands.CommandInfo;
+import ru.alexus.twitchbot.twitch.commands.CommandManager;
+import ru.alexus.twitchbot.twitch.commands.CommandResult;
 import ru.alexus.twitchbot.twitch.commands.EnumAccessLevel;
 import ru.alexus.twitchbot.twitch.objects.MsgTags;
 import ru.alexus.twitchbot.twitch.objects.User;
-
-import java.io.*;
-import java.net.InetSocketAddress;
-import java.net.Socket;
-import java.net.URL;
-import java.net.URLConnection;
-import java.util.*;
 
 
 public class Twitch extends TwitchHelper {
@@ -43,6 +28,7 @@ public class Twitch extends TwitchHelper {
 		}));
 
 		log.info("Twitch bot thread started");
+		Utils.init();
 		new Thread(TwitchHelper::senderThread).start();
 		new Thread(TwitchHelper::botListUpdater).start();
 		new Thread(TwitchHelper::connectionMonitor).start();
@@ -63,35 +49,70 @@ public class Twitch extends TwitchHelper {
 
 
 	public static void onPrivMsg(MsgTags tags, User user, String message){
+
+		Profiler.start("User registering");
 		if(tags.channel.registerUser(user)){
 			tags.channel.addUserToCurrentSession(user);
 		}else{
 			if(tags.channel.enabled)
 				Twitch.log.info("Failed to add user "+user.getDisplayName());
 		}
-		if(tags.isFirstMsg())
-			Twitch.sendMsg(Utils.replaceVars("Чатик, поздоровайтесь с {.caller}. Он первый раз на нашем канале!", tags, null), tags.channel);
-		else if(user.messagesInSession==-1&&user.getLevel()!= EnumAccessLevel.BROADCASTER){
-			CommandManager.executeCommand("!привет", tags);
-		}
-		log.info(user.getDisplayName()+": "+message);
-		try {
+		Profiler.endAndPrint();
 
-			CommandManager.executeCommand(message, tags);
+		log.info(user.getDisplayName()+": "+message);
+
+		Profiler.start("First msg check");
+		String msgToSend = "";
+		if(tags.isFirstMsg())
+			msgToSend = "Чатик, поздоровайтесь с {.caller}. Он первый раз на нашем канале!";
+		else if(tags.channel.enabled&&user.messagesInSession==-1&&user.getLevel().ordinal() < EnumAccessLevel.BROADCASTER.ordinal()){
+			CommandInfo commandInfo = CommandManager.getCommand("привет");
+			CommandResult result = commandInfo.executor.execute(commandInfo, "", new String[]{""}, tags, tags.channel, tags.getUser(), new CommandResult());
+			msgToSend = result.resultMessage;
+		}
+		Profiler.endAndPrint();
+
+		Profiler.start("Executing command");
+		CommandInfo cmd = null;
+		try {
+			cmd = CommandManager.extractCommand(message, tags);
+			if(cmd==null){
+			}else {
+				String result = CommandManager.executeCommand(message, tags, cmd);
+				if (result != null) msgToSend = result;
+			}
 		} catch (Exception e) {
 			e.printStackTrace();
-			sendMsg("Возникла ошибка при выполнении команды " + message, tags.channel);
+			msgToSend = "Возникла ошибка при выполнении команды " + message;
 		}
+		if((msgToSend == null || msgToSend.isEmpty())&&message.length()>1&&tags.channel.enabled){
+			if(Utils.converter.isNeedToConvert(message)){
+				msgToSend = "Видимо, {.caller} хотел сказать \""+Utils.converter.mirrorLayout(message)+"\"";
+			}
+		}
+		Profiler.endAndPrint();
+		Profiler.start("Sending result");
+		if(cmd==null)
+			Twitch.sendMsgReplace(msgToSend, tags, null, true);
+		else
+			Twitch.sendMsgReplace(msgToSend, tags, cmd, cmd.level.ordinal()>EnumAccessLevel.SUBSCRIBER.ordinal());
+		Profiler.endAndPrint();
+		Profiler.start("Updating user stats");
 		if(user.messagesInSession!=-1) user.messagesInSession++;
 		if(!tags.channel.enabled) return;
 		User u = tags.channel.getUserById(user.getUserId());
 
-		/*if(u.getBuggycoins() >= user.getBuggycoins()) */user.setBuggycoins(u.getBuggycoins());
-						/*else{
-							System.out.println("test");
-						}*/
+		user.setBuggycoins(u.getBuggycoins());
+		user.setMutableByOthers(u.isMutableByOthers());
 		if(u.messagesInSession > user.messagesInSession) user.messagesInSession = u.getBuggycoins();
+
+		Long lastUserSendTime = tags.channel.lastUserMsg.put(user.getUserId(), System.currentTimeMillis());
+		if(lastUserSendTime!=null&&lastUserSendTime+1000>System.currentTimeMillis()&&user.getLevel().ordinal() < EnumAccessLevel.BROADCASTER.ordinal()){
+			user.addBuggycoins(-20);
+			Twitch.log.info("User "+user.getDisplayName()+" flood detected!");
+		}
 		tags.channel.setUserById(user.getUserId(), user);
+		Profiler.endAndPrint();
 	}
 
 

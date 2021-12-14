@@ -27,6 +27,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
+import ru.alexus.twitchbot.langTypos.LangTypos_v2;
 import ru.alexus.twitchbot.twitch.Twitch;
 
 import javax.sql.DataSource;
@@ -34,8 +35,10 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.Scanner;
 
 @Controller
 @SpringBootApplication
@@ -52,6 +55,8 @@ public class Main {
 
 			Thread thread = new Thread(Twitch::startBot);
 			thread.start();
+		}else{
+			return;
 		}
 		SpringApplication.run(Main.class, args);
 	}
@@ -61,7 +66,10 @@ public class Main {
 	String index() {
 		return "index";
 	}
-
+	@RequestMapping("/daxtionoff")
+	String daxtionoff() {
+		return "daxtionoff";
+	}
 	@RequestMapping("/db")
 	String db(Map<String, Object> model) {
 		try (Connection connection = dataSource.getConnection()) {

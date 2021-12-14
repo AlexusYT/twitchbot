@@ -1,26 +1,26 @@
 package ru.alexus.twitchbot.twitch.commands.owner;
 
-import ru.alexus.twitchbot.twitch.CommandInfo;
+import ru.alexus.twitchbot.twitch.Channel;
+import ru.alexus.twitchbot.twitch.commands.CommandInfo;
 import ru.alexus.twitchbot.twitch.Twitch;
+import ru.alexus.twitchbot.twitch.commands.CommandResult;
 import ru.alexus.twitchbot.twitch.commands.ICommand;
 import ru.alexus.twitchbot.twitch.objects.MsgTags;
+import ru.alexus.twitchbot.twitch.objects.User;
 
 public class LeaveCmd implements ICommand {
 	@Override
-	public String execute(CommandInfo alias, String text, MsgTags tags) {
-		String channelName = text.split(" ")[0];
-		if(text.isEmpty()||channelName.equals(tags.getChannelName())){
-			Twitch.leftChannel(tags.getChannelName());
-			return "Я покидаю этот чат!";
-		}else{
-			Twitch.leftChannel(channelName);
-			return "Я покидаю чат "+channelName;
-		}
-	}
+	public CommandResult execute(CommandInfo command, String text, String[] args, MsgTags tags, Channel channel, User caller, CommandResult result) {
 
-	@Override
-	public String getDescription() {
-		return null;
+
+		if(args[0].isEmpty()||args[0].equalsIgnoreCase(tags.getChannelName())){
+			Twitch.leftChannel(tags.getChannelName());
+			result.resultMessage = "Я покидаю этот чат!";
+		}else{
+			Twitch.leftChannel(args[0]);
+			result.resultMessage = "Я покидаю чат канала "+args[0];
+		}
+		return result;
 	}
 
 	@Override

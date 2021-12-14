@@ -1,7 +1,10 @@
 package ru.alexus.twitchbot.twitch;
 
 import com.mysql.cj.jdbc.exceptions.CommunicationsException;
-import ru.alexus.twitchbot.twitch.objects.MsgTags;
+import org.springframework.lang.NonNull;
+import org.springframework.lang.Nullable;
+import ru.alexus.twitchbot.twitch.commands.CommandInfo;
+import ru.alexus.twitchbot.twitch.commands.CommandResult;
 import ru.alexus.twitchbot.twitch.objects.User;
 
 import java.sql.*;
@@ -24,6 +27,7 @@ public class Channel {
 	private final LinkedHashMap<Integer, User> userById = new LinkedHashMap<>();
 	private final LinkedHashMap<String, User> userByName = new LinkedHashMap<>();
 	public final LinkedList<Integer> activeUsers = new LinkedList<>();
+	public final LinkedHashMap<Integer, Long> lastUserMsg = new LinkedHashMap<>();
 
 	public Channel(){
 		enabled=false;
@@ -37,6 +41,103 @@ public class Channel {
 		this.greetingMsg = greetingMsg;
 		this.goodbyeMsg = goodbyeMsg;
 	}
+
+	public void addCoins(User user, int coins){
+		addCoins(user.getUserId(), coins);
+	}
+
+	public void addCoins(int id, int coins){
+		User target = userById.get(id);
+		if(target==null) return;
+		target.addBuggycoins(coins);
+	}
+
+	public void setCoins(User user, int coins){
+		setCoins(user.getUserId(), coins);
+	}
+
+	public void setCoins(int id, int coins){
+		User target = userById.get(id);
+		if(target==null) return;
+		target.setBuggycoins(coins);
+	}
+	public void removeCoins(User user, int coins){
+		addCoins(user.getUserId(), -coins);
+	}
+
+	public void removeCoins(int id, int coins){
+		addCoins(id, -coins);
+	}
+
+	/**
+	 * Checks user balance
+	 * @param username username to check
+	 * @param coins coins value
+	 * @return negative if coins insufficient, positive or 0 if sufficient, null if user not found
+	 */
+	@Nullable
+	public Integer checkCoins(@NonNull String username, int coins){
+		User user = getUserByName(username);
+		if(user==null) return null;
+		return checkCoins(user, coins);
+	}
+
+	/**
+	 * Checks user balance
+	 * @param user user object to check
+	 * @param info command result with assigned cost to coinCost
+	 * @return negative if coins insufficient, positive or 0 if sufficient, null if user not found
+	 */
+	@NonNull
+	public CommandResult checkSufficientCoins(@NonNull User user, @NonNull CommandInfo info){
+
+		CommandResult result = new CommandResult();
+		result.coinCost = info.executor.getCoinCost(user.getLevel());
+		Integer value = checkCoins(user.getUserId(), result.coinCost);
+		result.sufficientCoins = value!=null&&value>=0;
+		return result;
+	}
+	/**
+	 * Checks user balance
+	 * @param user user object to check
+	 * @param coins coins value
+	 * @return negative if coins insufficient, positive or 0 if sufficient, null if user not found
+	 */
+	@Nullable
+	public Integer checkCoins(@NonNull User user, int coins){
+		return checkCoins(user.getUserId(), coins);
+	}
+
+	/**
+	 * Checks user balance
+	 * @param id user id to check
+	 * @param coins coins value
+	 * @return negative if coins insufficient, positive or 0 if sufficient, null if user not found
+	 */
+	@Nullable
+	public Integer checkCoins(int id, int coins){
+		User target = userById.get(id);
+		if(target==null) return null;
+		return target.getBuggycoins()-coins;
+	}
+
+	public void executeInsert(String table, String fields, String valuesScheme, Object... values) throws SQLException {
+		String sql = "INSERT INTO "+table+" ("+fields+") VALUES ("+valuesScheme+")";
+		PreparedStatement preparedStatement = connection.prepareStatement(sql);
+		for (int i = 0; i < values.length; i++){
+			preparedStatement.setObject(i+1, values[i]);
+		}
+		preparedStatement.execute();
+		preparedStatement.close();
+	}
+	public ResultSet executeSelect(String table, String fields, String whereScheme, Object... whereValues) throws SQLException {
+		String sql = "SELECT "+fields+" FROM "+table+" WHERE "+whereScheme;
+		PreparedStatement preparedStatement = connection.prepareStatement(sql);
+		for (int i = 0; i < whereValues.length; i++){
+			preparedStatement.setObject(i+1, whereValues[i]);
+		}
+		return preparedStatement.executeQuery();
+	}
 	public boolean addUserToCurrentSession(User user){
 		boolean found = false;
 		for (Integer activeUser : activeUsers) {
@@ -46,6 +147,7 @@ public class Channel {
 			}
 		}
 		if(!found) activeUsers.add(user.getUserId());
+
 		if(!connectedToDB||sessionId==-1||user.messagesInSession!=-1) return false;
 		try {
 			PreparedStatement preparedStatement = connection.prepareStatement("SELECT * FROM userSession WHERE userSession.sessionId = ? AND userSession.twitchID = ?");
@@ -56,6 +158,7 @@ public class Channel {
 			if(resultSet.next()) {
 				user.messagesInSession = resultSet.getInt("totalMessages");
 			}
+			System.out.println(user);
 
 			resultSet.close();
 			preparedStatement.close();
@@ -93,26 +196,30 @@ public class Channel {
                         END
              WHERE id IN (1, 2, 3, 4);
 			 */
-			StringBuilder valuesStr = new StringBuilder();
+			StringBuilder coinsValues = new StringBuilder();
+			StringBuilder mutableValues = new StringBuilder();
 			StringBuilder whereStr1 = new StringBuilder();
-			valuesStr.append("CASE").append("\n");
+			coinsValues.append("CASE").append("\n");
+			mutableValues.append("CASE").append("\n");
 			whereStr1.append("(");
 			String delim = "";
 			for (User user : userById.values()) {
 				if(user.getBuggycoins()==0) continue;
-				valuesStr.append("WHEN users.twitchID = ").append(user.getUserId()).append(" THEN ").append(user.getBuggycoins()).append("\n");
+				coinsValues.append("WHEN users.twitchID = ").append(user.getUserId()).append(" THEN ").append(user.getBuggycoins()).append("\n");
+				mutableValues.append("WHEN users.twitchID = ").append(user.getUserId()).append(" THEN ").append(user.isMutableByOthers()?1:0).append("\n");
 
 				whereStr1.append(delim).append(user.getUserId());
 				delim = ",";
 			}
 			whereStr1.append(")");
-			valuesStr.append("ELSE buggycoins").append("\n END");
-			String sql = "UPDATE users SET buggycoins = "+valuesStr+" WHERE users.twitchID IN "+whereStr1;
+			coinsValues.append("ELSE buggycoins").append("\n END");
+			mutableValues.append("ELSE mutable").append("\n END");
+			String sql = "UPDATE users SET buggycoins = "+coinsValues+", mutable = "+mutableValues+" WHERE users.twitchID IN "+whereStr1;
+			//System.out.println(sql);
 			PreparedStatement statement = connection.prepareStatement(sql);
 			statement.execute();
 		} catch (CommunicationsException e) {
 			connectedToDB = false;
-			startConnectingDB();
 		} catch (SQLException e) {
 			e.printStackTrace();
 			return false;
@@ -128,13 +235,14 @@ public class Channel {
 			whereStr1.append("(");
 			String delim = "";
 			for (User user : userById.values()) {
-
+				if(user.messagesInSession==-1) continue;
 				valuesStr.append("WHEN userSession.sessionId = ").append(sessionId).append(" AND userSession.twitchID = ")
-						.append(user.getUserId()).append(" THEN ").append(Math.max(user.messagesInSession, 0)).append("\n");
+						.append(user.getUserId()).append(" THEN ").append(user.messagesInSession).append("\n");
 
 				whereStr1.append(delim).append(user.getUserId());
 				delim = ",";
 			}
+			if(delim.isEmpty()) return true;
 			whereStr1.append(")");
 			valuesStr.append("ELSE totalMessages").append("\n END");
 			String sql = "UPDATE userSession SET totalMessages = "+valuesStr+" WHERE userSession.sessionId = ? AND userSession.twitchID IN "+whereStr1;
@@ -146,7 +254,6 @@ public class Channel {
 
 		} catch (CommunicationsException e) {
 			connectedToDB = false;
-			startConnectingDB();
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
@@ -277,15 +384,22 @@ public class Channel {
 	public User getUserById(int id) {
 		return userById.get(id);
 	}
-	public User getUserByName(String name) {
-		return userByName.get(name.toLowerCase(Locale.ROOT));
+	@Nullable
+	public User getUserByName(@NonNull String name) {
+		name = name.toLowerCase(Locale.ROOT);
+		if(name.startsWith("@")) name = name.substring(1);
+		return userByName.get(name);
 	}
-	public void setUserById(int id, User newUser) {
+
+	public void setUserById(int id, @NonNull User newUser) {
 		userById.put(id, newUser);
 		userByName.put(newUser.getDisplayName().toLowerCase(Locale.ROOT), newUser);
 	}
-	public void setUserByName(String name, User newUser) {
+
+	public void setUserByName(@NonNull String name, @NonNull User newUser) {
+		if(name.startsWith("@")) name = name.substring(1);
 		userById.put(newUser.getUserId(), newUser);
 		userByName.put(name.toLowerCase(Locale.ROOT), newUser);
 	}
+
 }

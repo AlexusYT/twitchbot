@@ -10,6 +10,8 @@ import org.apache.logging.log4j.core.config.builder.impl.BuiltConfiguration;
 import org.apache.logging.log4j.core.layout.PatternLayout;
 import org.apache.tomcat.util.json.JSONParser;
 import org.apache.tomcat.util.json.ParseException;
+import ru.alexus.twitchbot.Utils;
+import ru.alexus.twitchbot.twitch.commands.CommandInfo;
 import ru.alexus.twitchbot.twitch.objects.MsgTags;
 import ru.alexus.twitchbot.twitch.objects.User;
 
@@ -115,12 +117,15 @@ public class TwitchHelper {
 					String channel = elements[2].substring(1);
 					if(botNameOnServer.equals(user)) {
 						Channel config = Channels.getChannel(channel);
+						if(config==null) config = Channels.addChannel(channel);
+
 						config.connectedToIRC = elements[1].equals("JOIN");
 						if(config.connectedToIRC){
 							config.startConnectingDB();
 						}else{
 							config.startDisconnectingDB();
 							config.enabled = false;
+							Channels.removeChannel(channel);
 						}
 						continue;
 					}
@@ -131,20 +136,18 @@ public class TwitchHelper {
 
 					continue;
 				}
-				switch (elements[2]) {
-					case "PRIVMSG":
+				if (elements[2].equals("PRIVMSG")) {
+					MsgTags tags = new MsgTags(elements[0], elements[3].substring(1));
+					User user = tags.getUser();
 
-						MsgTags tags = new MsgTags(elements[0], elements[3].substring(1));
-						User user = tags.getUser();
+					if (viewerBots.contains(user.getDisplayName().toLowerCase(Locale.ROOT))) continue;
 
-						if(viewerBots.contains(user.getDisplayName().toLowerCase(Locale.ROOT))) continue;
-
-						String message = elements[4].substring(1);
-						Twitch.onPrivMsg(tags, user, message);
-
-						break;
-					default:
-						log.info(Arrays.toString(elements));
+					String message = elements[4].substring(1);
+					Profiler.start("onPrivMsg");
+					Twitch.onPrivMsg(tags, user, message);
+					Profiler.endAndPrint("onPrivMsg");
+				} else {
+					log.info(Arrays.toString(elements));
 				}
 
 				if (shutdown) {
@@ -186,11 +189,25 @@ public class TwitchHelper {
 			e.printStackTrace();
 		}
 	}
+	public static void sendMsgReplace(String text, MsgTags tags, CommandInfo command){
+		sendMsgReplace(text, tags, command, false);
+	}
+	public static void sendMute(User user, Channel channel, int time, String reason) {
+		sendMsg("/timeout "+user.getDisplayName()+" "+time+" "+reason, channel, true);
+	}
+	public static void sendMsgReplace(String text, MsgTags tags, CommandInfo command, boolean immediately){
 
+		if(text==null||text.isEmpty()) return;
+		Profiler.start("replaceVars call");
+		String vars = Utils.replaceVars(text, tags, command);
+		Profiler.endAndPrint();
+		sendMsg(vars, tags.channel, immediately);
+	}
 	public static void sendMsg(String text, Channel channel){
 		sendMsg(text, channel, false);
 	}
 	public static void sendMsg(String text, Channel channel, boolean immediately) {
+		Profiler.start("sendMsg");
 		if(text.isEmpty()) return;
 		if(immediately){
 			try {
@@ -202,10 +219,12 @@ public class TwitchHelper {
 			}
 
 		}else {
+			Profiler.start("Adding to queue");
 			if (channel.queueToSend.isEmpty()) channel.firstSend = System.currentTimeMillis();
 			channel.queueToSend.add(text);
 			log.info("Adding to channel " + channel.channelName + " queue: " + text);
 		}
+		Profiler.endAndPrint();
 	}
 	static void senderThread(){
 		while (true){
@@ -240,8 +259,15 @@ public class TwitchHelper {
 	protected static void connectionMonitor(){
 		while (true){
 			if(lastPingTime+6*60*1000<System.currentTimeMillis()){
-				log.info("Twitch hang up. Reconnecting");
+				log.info("Twitch is not responding. Reconnecting");
 				for (Channel channel : Channels.getChannels().values()){
+					channel.saveTotalMessagesToDB();
+					channel.saveBuggycoinsToDB();
+					if(!channel.connectedToDB){
+						channel.connectedToDB = channel.connectToDB();
+						channel.saveTotalMessagesToDB();
+						channel.saveBuggycoinsToDB();
+					}
 					channel.startDisconnectingDB();
 					channel.connectedToIRC = false;
 					channel.connectedToDB = channel.connectToDB();

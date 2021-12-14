@@ -1,21 +1,59 @@
 package ru.alexus.twitchbot.twitch.commands.regular;
 
 import ru.alexus.twitchbot.Utils;
-import ru.alexus.twitchbot.twitch.CommandInfo;
-import ru.alexus.twitchbot.twitch.commands.EnumAccessLevel;
-import ru.alexus.twitchbot.twitch.commands.ICommand;
+import ru.alexus.twitchbot.twitch.Channel;
+import ru.alexus.twitchbot.twitch.commands.CommandInfo;
+import ru.alexus.twitchbot.twitch.CommonMessages;
+import ru.alexus.twitchbot.twitch.commands.CommandResult;
+import ru.alexus.twitchbot.twitch.commands.SubCommandInfo;
 import ru.alexus.twitchbot.twitch.objects.MsgTags;
 import ru.alexus.twitchbot.twitch.objects.User;
 
 
-public class CoinsTransferCmd implements ICommand {
+public class CoinsTransferCmd extends SubCommandInfo {
+
 	@Override
+	public CommandResult execute(CommandInfo command, String text, String[] args, MsgTags tags, Channel channel, User caller, CommandResult result) {
+		if(args.length!=2) return super.execute(command, text, args, tags, channel, caller, result);
+
+		User targetUser = channel.getUserByName(args[0]);
+		if(targetUser!=null&&targetUser.getUserId()==caller.getUserId()) {
+			result.resultMessage = "{.caller}, нельзя перевести коины самому себе";
+			return result;
+		}
+		if (targetUser == null){
+			result.resultMessage = CommonMessages.userNotFound(args[0]);
+			return result;
+		}
+
+		int sum;
+		try{
+			sum = Integer.parseInt(args[1]);
+			if(sum<10){
+				result.resultMessage = "{.caller}, сумма должна быть больше или равна 10 коинам";
+				return result;
+			}
+			if(caller.getBuggycoins()<sum) {
+				result.resultMessage = CommonMessages.notEnoughCoins();
+				return result;
+			}
+		}catch (Exception ignored){
+			result.resultMessage = "{.caller}, введи корректную сумму для перевода";
+			return result;
+		}
+		channel.removeCoins(caller, sum);
+		channel.addCoins(targetUser, (int) (sum*0.8));
+		result.resultMessage = "{.caller}, коины успешно переведены "+targetUser.getDisplayName()+". Комиссия составила: "+Utils.pluralizeMessageCoin((int) (sum*0.2));
+		return result;
+
+	}
+
+	/*@Override
 	public String execute(CommandInfo alias, String text, MsgTags tags) {
 		String[] args = text.split(" ");
-		System.out.println(text);
-		if(args.length!=2){
-			return "{.caller}, эта команда нужна для того, чтобы "+alias.description;
-		}
+
+		if(args.length!=2) return super.execute(alias, text, tags);
+
 
 		String target = args[0];
 		if(target.startsWith("@")) target = target.substring(1);
@@ -32,7 +70,7 @@ public class CoinsTransferCmd implements ICommand {
 			sum = Integer.parseInt(args[1]);
 			if(sum<10) return "{.caller}, сумма должна быть больше или равна 10 коинам";
 			if(currentUser.getBuggycoins()<sum)
-				return "{.caller}, у тебя есть только "+ Utils.pluralizeMessage(currentUser.getBuggycoins(), "коин", "коина", "коинов");
+				return "{.caller}, у тебя есть только "+ Utils.pluralizeMessageCoin(currentUser.getBuggycoins());
 		}catch (Exception ignored){
 			return "{.caller}, введи корректную сумму для перевода";
 		}
@@ -42,8 +80,8 @@ public class CoinsTransferCmd implements ICommand {
 		tags.channel.setUserById(currentUser.getUserId(), currentUser);
 		tags.channel.setUserById(targetUser.getUserId(), targetUser);
 
-		return "{.caller}, коины успешно переведены "+target+". Комиссия составила: "+Utils.pluralizeMessage((int) (sum*0.2), "коин", "коина", "коинов");
-	}
+		return "{.caller}, коины успешно переведены "+target+". Комиссия составила: "+Utils.pluralizeMessageCoin((int) (sum*0.2));
+	}*/
 
 	@Override
 	public String getDescription() {

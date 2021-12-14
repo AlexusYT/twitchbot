@@ -10,7 +10,7 @@ public class Channels {
 	private static final HashMap<String, Channel> channels = new HashMap<>();
 	static {
 		addChannel("alexus_xx", "Привет, чат", "Пока, чат");
-		addChannel("daxtionoff", "Приветствую всех в чате", "Всем удачи и всем пока! Squid1 Squid2 Squid3 Squid2 Squid4", false);
+		//addChannel("daxtionoff", "Приветствую всех в чате", "Всем удачи и всем пока! Squid1 Squid2 Squid3 Squid2 Squid4", false);
 
 		new Thread(Channels::addBuggycoinsToUsers).start();
 	}
@@ -29,7 +29,7 @@ public class Channels {
 						K+=user.getSubMonths()/10.0;
 					}
 					user.addBuggycoins((int) ((2+(user.messagesInSession/100*2))*K));
-					Twitch.log.info("Added coins to user "+user.getDisplayName()+": "+user.getBuggycoins());
+					Twitch.log.info("Added coins to user "+user.getDisplayName()+": "+user.getBuggycoins()+". Total messages "+user.messagesInSession);
 					channel.setUserById(user.getUserId(), user);
 				}
 				channel.activeUsers.clear();
@@ -39,6 +39,13 @@ public class Channels {
 			}
 		}
 
+	}
+	public static Channel addChannel(String channelName){
+		addChannel(channelName, "Привет всем", "Пока всем", false);
+		return getChannel(channelName);
+	}
+	public static void removeChannel(String channelName){
+		channels.remove(channelName);
 	}
 	private static void addChannel(String channelName, String greetingMsg, String byeMsg){
 		addChannel(channelName, greetingMsg, byeMsg, false);

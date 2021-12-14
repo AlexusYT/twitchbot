@@ -1,16 +1,56 @@
 package ru.alexus.twitchbot.twitch.commands.regular;
 
 import ru.alexus.twitchbot.Utils;
-import ru.alexus.twitchbot.twitch.CommandInfo;
-import ru.alexus.twitchbot.twitch.commands.EnumAccessLevel;
-import ru.alexus.twitchbot.twitch.commands.ICommand;
+import ru.alexus.twitchbot.twitch.Channel;
+import ru.alexus.twitchbot.twitch.commands.CommandInfo;
+import ru.alexus.twitchbot.twitch.WordCases;
+import ru.alexus.twitchbot.twitch.commands.CommandResult;
+import ru.alexus.twitchbot.twitch.commands.MainCommandInfo;
 import ru.alexus.twitchbot.twitch.objects.MsgTags;
+import ru.alexus.twitchbot.twitch.objects.User;
 
-public class MeasureCmd implements ICommand {
-
+public class MeasureCmd extends MainCommandInfo {
 	@Override
-	public String execute(CommandInfo alias, String text, MsgTags tags) {
+	public CommandResult execute(CommandInfo command, String text, String[] args, MsgTags tags, Channel channel, User caller, CommandResult result) {
+		if(args[0].isEmpty()) return super.execute(command, text, args, tags, channel, caller, result);
 
+		int val = Utils.random.nextInt(40)-2;
+		int ed = Utils.random.nextInt(3);
+		String s = "";
+		if(ed==0) s=" мм";
+		if(ed==1) s=" cм";
+		if(ed==2) s=" км";
+		String word = args[0];
+		if(Utils.isRussian(word)){
+			WordCases cases = Utils.getWordCase(word);
+			if(cases!=null&&cases.genitive!=null&&!cases.genitive.isEmpty()) word = cases.genitive;
+		}
+		switch (word) {
+			case "меня":
+			case "роста":
+				result.resultMessage = "{.caller}, твой рост равен " + val + s;
+				break;
+			case "его":
+				result.resultMessage = "{.caller}, его рост равен " + val + s;
+				break;
+			case "её":
+				result.resultMessage = "{.caller}, её рост равен " + val + s;
+				break;
+			case "их":
+				result.resultMessage = "{.caller}, их рост равен " + val + s;
+				break;
+			default:
+				result.resultMessage = "{.caller}, длина " + word + " равна " + val + s;
+				break;
+		}
+
+		return result;
+
+	}
+	//https://sklonili.ru/алиас
+	/*@Override
+	public String execute(CommandInfo alias, String text, MsgTags tags) {
+		if(text.isEmpty()) return super.execute(alias, text, tags);
 		int val = Utils.random.nextInt(40)-2;
 		int ed = Utils.random.nextInt(3);
 		String s = "";
@@ -84,11 +124,11 @@ public class MeasureCmd implements ICommand {
 		}
 
 		return "{.caller}, длина "+word + " равна "+ val + s;
-	}
+	}*/
 
 	@Override
 	public String getDescription() {
-		return "измерить длину какого-либо существительного";
+		return "измерить длину какого-либо существительного. Склонение работает не всегда корректно";
 	}
 
 	@Override

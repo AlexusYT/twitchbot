@@ -1,20 +1,20 @@
 package ru.alexus.twitchbot.twitch.commands.owner;
 
-import ru.alexus.twitchbot.twitch.CommandInfo;
+import ru.alexus.twitchbot.twitch.Channel;
+import ru.alexus.twitchbot.twitch.commands.CommandInfo;
 import ru.alexus.twitchbot.twitch.Twitch;
+import ru.alexus.twitchbot.twitch.commands.CommandResult;
 import ru.alexus.twitchbot.twitch.commands.ICommand;
 import ru.alexus.twitchbot.twitch.objects.MsgTags;
+import ru.alexus.twitchbot.twitch.objects.User;
 
 public class ShutdownCmd implements ICommand {
 	@Override
-	public String execute(CommandInfo alias, String text, MsgTags tags) {
-		Twitch.shutdownBot();
-		return "Я выключаюсь";
-	}
+	public CommandResult execute(CommandInfo command, String text, String[] args, MsgTags tags, Channel channel, User caller, CommandResult result) {
 
-	@Override
-	public String getDescription() {
-		return null;
+		Twitch.shutdownBot();
+		result.resultMessage = "Я выключаюсь";
+		return result;
 	}
 
 	@Override

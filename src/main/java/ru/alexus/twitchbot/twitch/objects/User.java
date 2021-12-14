@@ -18,6 +18,7 @@ public class User {
 	private boolean turbo, mod, subscriber;
 	private int buggycoins = 0;
 	public int messagesInSession = -1;
+	private boolean mutableByOthers = false;
 	private EnumAccessLevel level = EnumAccessLevel.REGULAR;
 
 
@@ -71,6 +72,7 @@ public class User {
 		}
 		this.buggycoins = user.buggycoins;
 		this.messagesInSession = user.messagesInSession;
+		this.mutableByOthers = user.mutableByOthers;
 		channel.setUserById(user.getUserId(), user);
 
 
@@ -80,6 +82,7 @@ public class User {
 		buggycoins = resultSet.getInt("buggycoins");
 		userId = resultSet.getInt("twitchID");
 		displayName = resultSet.getString("nickname");
+		mutableByOthers = resultSet.getBoolean("mutable");
 	}
 
 	public HashMap<EnumBadgeType, BadgeInfo> getBadges() {
@@ -142,5 +145,23 @@ public class User {
 
 	public int getSubMonths() {
 		return subMonths;
+	}
+
+	public boolean isMutableByOthers() {
+		return mutableByOthers;
+	}
+
+	public void setMutableByOthers(boolean mutableByOthers) {
+		this.mutableByOthers = mutableByOthers;
+	}
+
+	@Override
+	public String toString() {
+		return "User{" + "displayName='" + displayName + '\'' +
+				", userId=" + userId +
+				", buggycoins=" + buggycoins +
+				", messagesInSession=" + messagesInSession +
+				", level=" + level +
+				'}';
 	}
 }
