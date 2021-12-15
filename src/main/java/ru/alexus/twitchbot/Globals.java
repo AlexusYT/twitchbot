@@ -8,6 +8,7 @@ import org.apache.logging.log4j.core.config.builder.api.ConfigurationBuilder;
 import org.apache.logging.log4j.core.config.builder.api.ConfigurationBuilderFactory;
 import org.apache.logging.log4j.core.config.builder.impl.BuiltConfiguration;
 import org.apache.logging.log4j.core.layout.PatternLayout;
+import ru.alexus.twitchbot.eventsub.AppAccessToken;
 import ru.alexus.twitchbot.twitch.Twitch;
 
 public class Globals {
@@ -16,6 +17,8 @@ public class Globals {
 	public static Logger log;
 	public static String twitchClientId = "cxxcdpgmikulrcqf6wb899qxgfgrkw";
 	public static String twitchSecret = "9fubbi0620woz6c65kf1cag7u2c4ao";
+	public static AppAccessToken appAccessToken = null;
+	public static boolean readyToBotStart = false;
 
 
 	static {

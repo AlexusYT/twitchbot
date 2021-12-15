@@ -11,6 +11,8 @@ import ru.alexus.twitchbot.twitch.commands.EnumAccessLevel;
 import ru.alexus.twitchbot.twitch.objects.MsgTags;
 import ru.alexus.twitchbot.twitch.objects.User;
 
+import java.util.concurrent.TimeUnit;
+
 
 public class Twitch extends TwitchHelper {
 	public static final String databaseUrl = "jdbc:mysql://slymcdb.cusovblh0zzb.eu-west-2.rds.amazonaws.com";
@@ -28,7 +30,14 @@ public class Twitch extends TwitchHelper {
 			}
 
 		}));
-
+		Globals.log.info("Waiting webserver to be ready");
+		while (!Globals.readyToBotStart){
+			try {
+				TimeUnit.MILLISECONDS.sleep(50);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
 		Globals.log.info("Twitch bot thread started");
 		Utils.init();
 		new Thread(TwitchHelper::senderThread).start();

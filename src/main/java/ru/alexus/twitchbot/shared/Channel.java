@@ -7,28 +7,38 @@ import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 import ru.alexus.twitchbot.Globals;
 import ru.alexus.twitchbot.Utils;
+import ru.alexus.twitchbot.eventsub.EventSubInfo;
+import ru.alexus.twitchbot.eventsub.TwitchEventSubAPI;
 import ru.alexus.twitchbot.twitch.Channels;
 import ru.alexus.twitchbot.twitch.Twitch;
 import ru.alexus.twitchbot.twitch.commands.CommandInfo;
 import ru.alexus.twitchbot.twitch.commands.CommandResult;
+import ru.alexus.twitchbot.twitch.objects.BadgeInfo;
 import ru.alexus.twitchbot.twitch.objects.User;
 import ru.alexus.twitchbot.web.Web;
 
+import java.awt.*;
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.sql.*;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.Locale;
+import java.util.*;
 
 import static ru.alexus.twitchbot.Utils.pluralizeMessage;
 
 public class Channel {
+	private boolean emoteOnly;
+	private int followersOnly;
+	private int channelId;
+	private boolean slowMode;
+	private boolean subsOnly;
+
+	public HashMap<String, EventSubInfo> subscriptions = new HashMap<>();
+
 	public String channelName;
 	public String greetingMsg;
 	public String goodbyeMsg;
@@ -77,55 +87,8 @@ public class Channel {
  */
 
 		httpContext = Web.registerChannel(this);
-		try {
-			JSONObject root = new JSONObject();
-			//root.put("type", "channel.ban");
-			//root.put("version", "1");
-			JSONObject condition = new JSONObject();
-			{
-				condition.put("broadcaster_user_id", "134945794");
-			}
-			//root.put("condition", condition);
-			JSONObject transport = new JSONObject();
-			{
-				transport.put("method", "webhook");
-				transport.put("callback", "http://localhost/alexus_xx/callback");
-				transport.put("secret", "dsdfsdf");
-			}
-			root.put("transport", transport);
-			HashMap<String, String> headers = new HashMap<>();
-			headers.put("Client-Id", Globals.twitchClientId);
-			headers.put("Authorization", "Bearer 650rua7pcbgltdb7fo1rrehxiqzvsq");
-			String send = "{\"condition\":{\"broadcaster_user_id\":\"134945794\"},\"transport\":{\"method\":\"webhook\",\"callback\":\"http://localhost/alexus_xx/callback\",\"secret\":\"s3cre7\"},\"type\":\"channel.ban\",\"version\":\"1\"}";
-			String result = Utils.sendPost("https://alexus-twitchbot.herokuapp.com/alexus_xx/callback", headers, send);
-			System.out.println(result);
-			result = Utils.sendPost("https://api.twitch.tv/helix/eventsub/subscriptions", headers, "{");
-			System.out.println(result);
-			/*HttpURLConnection http = (HttpURLConnection) new URL("http://localhost/alexus_xx/callback").openConnection();
-			//HttpURLConnection http = (HttpURLConnection) new URL("https://api.twitch.tv/helix/eventsub/subscriptions").openConnection();
-			http.setRequestMethod("POST");
-			http.setDoOutput(true);
-			http.setRequestProperty("Content-Type", "application/json");
-			http.setRequestProperty("Client-Id", Globals.twitchClientId);
-			http.setRequestProperty("Authorization", "Bearer 650rua7pcbgltdb7fo1rrehxiqzvsq");
 
 
-			try (OutputStream os = http.getOutputStream()) {
-				os.write(root.toString().getBytes(StandardCharsets.UTF_8));
-			}
-
-			BufferedReader br = new BufferedReader(new InputStreamReader(http.getInputStream()));
-			StringBuilder builder = new StringBuilder();
-			String line;
-			while ((line = br.readLine()) != null) {
-				builder.append(line).append("\n");
-			}
-			System.out.println("Response: " + builder);*/
-			//http.setFixedLengthStreamingMode(root.toString().length());
-			//http.connect();
-		}catch (Exception e){
-			Globals.log.error("Error:", e);
-		}
 	}
 
 	public void deinit(){
@@ -136,6 +99,33 @@ public class Channel {
 
 			dbConnection.close();
 		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+	}
+
+	public void subscribeEvent(String type, Map<String, String> conditions) throws IOException {
+		subscriptions.put(type, TwitchEventSubAPI.subscribeToEvent(type, "1", channelName+"/callback", conditions));
+
+	}
+
+	public void initRoomState(String str){
+		for (String tag : str.split(";")) {
+			String[] tagElem = tag.split("=");
+			try{
+				switch (tagElem[0]) {
+					case "@emote-only" -> emoteOnly = tagElem[1].equals("1");
+					case "followers-only" -> followersOnly = Integer.parseInt(tagElem[1]);
+					case "room-id" -> channelId = Integer.parseInt(tagElem[1]);
+					case "subs-only" -> subsOnly = tagElem[1].equals("1");
+					case "slow" -> slowMode = tagElem[1].equals("1");
+					default -> System.out.println("Unknown channel tag: " + tag);
+				}
+			}catch (Exception ignored){}
+		}
+
+		try {
+			subscribeEvent("channel.ban", Map.of("broadcaster_user_id", String.valueOf(channelId)));
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}

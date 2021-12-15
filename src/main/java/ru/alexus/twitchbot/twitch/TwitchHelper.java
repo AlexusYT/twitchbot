@@ -118,7 +118,10 @@ public class TwitchHelper {
 					Profiler.start("onPrivMsg");
 					Twitch.onPrivMsg(tags, user, message);
 					Profiler.endAndPrint("onPrivMsg");
-				} else {
+				} else if (elements[2].equals("ROOMSTATE")) {
+					String channel = elements[3].substring(1);
+					Channels.getChannel(channel).initRoomState(elements[0]);
+				}else{
 					Globals.log.info(Arrays.toString(elements));
 				}
 

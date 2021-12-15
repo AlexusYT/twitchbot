@@ -143,15 +143,9 @@ public class Utils {
 		}
 		final DataOutputStream out = new DataOutputStream(http.getOutputStream());
 		out.writeBytes(data);
-		out.flush();
 		out.close();
-		/*OutputStream os = http.getOutputStream();
-		os.write(URLEncoder.encode( data, StandardCharsets.UTF_8).getBytes());
-		/*BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(http.getOutputStream()));
-		writer.write(URLEncoder.encode( data, StandardCharsets.UTF_8));
-		writer.close();*/
-		StringBuilder builder = new StringBuilder();
 
+		StringBuilder builder = new StringBuilder();
 		try {
 			BufferedReader br = new BufferedReader(new InputStreamReader(http.getInputStream()));
 			String line;
@@ -167,5 +161,52 @@ public class Utils {
 			}
 		}
 		return builder.toString();
+	}
+
+	public static String sendGet(String address, HashMap<String, String> headers, String data) throws IOException {
+		HttpURLConnection http = (HttpURLConnection) new URL(address+"?"+data).openConnection();
+		http.setRequestMethod("GET");
+
+		if(headers!=null) {
+			for (Map.Entry<String, String> header : headers.entrySet()) {
+				http.setRequestProperty(header.getKey(), header.getValue());
+			}
+		}
+
+		StringBuilder builder = new StringBuilder();
+		try {
+			BufferedReader br = new BufferedReader(new InputStreamReader(http.getInputStream()));
+			String line;
+			while ((line = br.readLine()) != null) {
+				builder.append(line).append("\n");
+			}
+		}catch (Exception e){
+
+			BufferedReader br = new BufferedReader(new InputStreamReader(http.getErrorStream()));
+			String line;
+			while ((line = br.readLine()) != null) {
+				builder.append(line).append("\n");
+			}
+		}
+		return builder.toString();
+	}
+	public static int sendDelete(String address, HashMap<String, String> headers, String data) throws IOException {
+		HttpURLConnection http = (HttpURLConnection) new URL(address+"?"+data).openConnection();
+		http.setRequestMethod("DELETE");
+
+		if(headers!=null) {
+			for (Map.Entry<String, String> header : headers.entrySet()) {
+				http.setRequestProperty(header.getKey(), header.getValue());
+			}
+		}
+
+		return http.getResponseCode();
+	}
+	public static String generateSecret() {
+		StringBuilder secret = new StringBuilder();
+		for (int i = 0; i < random.nextInt(60, 90); i++) {
+			secret.append(Integer.toHexString(random.nextInt(0, 15)));
+		}
+		return secret.toString();
 	}
 }

@@ -1,7 +1,9 @@
 package ru.alexus.twitchbot.web;
 
+import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
+import org.json.JSONObject;
 import ru.alexus.twitchbot.Globals;
 import ru.alexus.twitchbot.shared.Channel;
 
@@ -20,19 +22,37 @@ class ChannelCallback implements HttpHandler {
 
 	@Override
 	public void handle(HttpExchange t) throws IOException {
-		Globals.log.info("Method: "+t.getRequestMethod());
+
 		BufferedReader br = new BufferedReader(new InputStreamReader(t.getRequestBody()));
+		StringBuilder clientBody = new StringBuilder();
 		String line;
 		while ((line = br.readLine()) != null) {
-			Globals.log.info("Body: "+line);
+			clientBody.append(line).append("\n");
 		}
+		Headers requestHeaders = t.getRequestHeaders();
+		if(requestHeaders.containsKey("Twitch-Eventsub-Message-Type")){
+			String messageType = requestHeaders.getFirst("witch-Eventsub-Message-Type");
+			if(messageType.equals("webhook_callback_verification")){
+				JSONObject body = new JSONObject(clientBody);
+				String challenge = body.getString("challenge");
+
+				t.sendResponseHeaders(200, challenge.length());
+				OutputStream os = t.getResponseBody();
+				os.write(challenge.getBytes(StandardCharsets.UTF_8));
+				os.close();
+				return;
+			}
+		}
+
+		Globals.log.info("Method: "+t.getRequestMethod());
 		Globals.log.info("URI: "+t.getRequestURI().toString());
 		StringBuilder headers = new StringBuilder();
-
-		for(Map.Entry<String, List<String>> header : t.getRequestHeaders().entrySet()){
+		for(Map.Entry<String, List<String>> header : requestHeaders.entrySet()){
 			headers.append(header.getKey()).append(": ").append(header.getValue()).append("\n");
 		}
 		Globals.log.info("Headers: "+headers);
+		Globals.log.info("Body: "+clientBody);
+
 		String ret = "test";
 		t.sendResponseHeaders(200, ret.length());
 		OutputStream os = t.getResponseBody();
