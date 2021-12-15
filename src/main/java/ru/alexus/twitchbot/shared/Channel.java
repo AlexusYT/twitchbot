@@ -1,12 +1,25 @@
-package ru.alexus.twitchbot.twitch;
+package ru.alexus.twitchbot.shared;
 
 import com.mysql.cj.jdbc.exceptions.CommunicationsException;
+import com.sun.net.httpserver.HttpContext;
+import org.json.JSONObject;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
+import ru.alexus.twitchbot.Globals;
+import ru.alexus.twitchbot.Utils;
+import ru.alexus.twitchbot.twitch.Channels;
+import ru.alexus.twitchbot.twitch.Twitch;
 import ru.alexus.twitchbot.twitch.commands.CommandInfo;
 import ru.alexus.twitchbot.twitch.commands.CommandResult;
 import ru.alexus.twitchbot.twitch.objects.User;
+import ru.alexus.twitchbot.web.Web;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.sql.*;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -20,7 +33,8 @@ public class Channel {
 	public String greetingMsg;
 	public String goodbyeMsg;
 	public boolean enabled, connectedToIRC, connectedToDB;
-	public Connection connection;
+	public Connection dbConnection;
+	private HttpContext httpContext;
 	public LinkedList<String> queueToSend;
 	public long firstSend;
 	public int sessionId = -1;
@@ -40,6 +54,90 @@ public class Channel {
 		this.channelName = channelName;
 		this.greetingMsg = greetingMsg;
 		this.goodbyeMsg = goodbyeMsg;
+	}
+
+	public void init(){
+		new Thread(() -> {
+			int tries = 0;
+			while (!connectedToDB) {
+				if(tries>0) {
+					long sec = (long) Math.pow(2, tries);
+					Globals.log.info("Retrying in " + sec + "s");
+					try {
+						Thread.sleep(sec * 1000);
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+				}
+				connectedToDB = connectToDB();
+				tries++;
+			}
+		}).start();
+/*
+ */
+
+		httpContext = Web.registerChannel(this);
+		try {
+			JSONObject root = new JSONObject();
+			//root.put("type", "channel.ban");
+			//root.put("version", "1");
+			JSONObject condition = new JSONObject();
+			{
+				condition.put("broadcaster_user_id", "134945794");
+			}
+			//root.put("condition", condition);
+			JSONObject transport = new JSONObject();
+			{
+				transport.put("method", "webhook");
+				transport.put("callback", "http://localhost/alexus_xx/callback");
+				transport.put("secret", "dsdfsdf");
+			}
+			root.put("transport", transport);
+			HashMap<String, String> headers = new HashMap<>();
+			headers.put("Client-Id", Globals.twitchClientId);
+			headers.put("Authorization", "Bearer 650rua7pcbgltdb7fo1rrehxiqzvsq");
+			String send = "{\"condition\":{\"broadcaster_user_id\":\"134945794\"},\"transport\":{\"method\":\"webhook\",\"callback\":\"http://localhost/alexus_xx/callback\",\"secret\":\"s3cre7\"},\"type\":\"channel.ban\",\"version\":\"1\"}";
+			String result = Utils.sendPost("https://alexus-twitchbot.herokuapp.com/alexus_xx/callback", headers, send);
+			System.out.println(result);
+			result = Utils.sendPost("https://api.twitch.tv/helix/eventsub/subscriptions", headers, "{");
+			System.out.println(result);
+			/*HttpURLConnection http = (HttpURLConnection) new URL("http://localhost/alexus_xx/callback").openConnection();
+			//HttpURLConnection http = (HttpURLConnection) new URL("https://api.twitch.tv/helix/eventsub/subscriptions").openConnection();
+			http.setRequestMethod("POST");
+			http.setDoOutput(true);
+			http.setRequestProperty("Content-Type", "application/json");
+			http.setRequestProperty("Client-Id", Globals.twitchClientId);
+			http.setRequestProperty("Authorization", "Bearer 650rua7pcbgltdb7fo1rrehxiqzvsq");
+
+
+			try (OutputStream os = http.getOutputStream()) {
+				os.write(root.toString().getBytes(StandardCharsets.UTF_8));
+			}
+
+			BufferedReader br = new BufferedReader(new InputStreamReader(http.getInputStream()));
+			StringBuilder builder = new StringBuilder();
+			String line;
+			while ((line = br.readLine()) != null) {
+				builder.append(line).append("\n");
+			}
+			System.out.println("Response: " + builder);*/
+			//http.setFixedLengthStreamingMode(root.toString().length());
+			//http.connect();
+		}catch (Exception e){
+			Globals.log.error("Error:", e);
+		}
+	}
+
+	public void deinit(){
+		Web.unregisterChannel(httpContext);
+
+		connectedToDB = false;
+		try {
+
+			dbConnection.close();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
 	}
 
 	public void addCoins(User user, int coins){
@@ -123,7 +221,7 @@ public class Channel {
 
 	public void executeInsert(String table, String fields, String valuesScheme, Object... values) throws SQLException {
 		String sql = "INSERT INTO "+table+" ("+fields+") VALUES ("+valuesScheme+")";
-		PreparedStatement preparedStatement = connection.prepareStatement(sql);
+		PreparedStatement preparedStatement = dbConnection.prepareStatement(sql);
 		for (int i = 0; i < values.length; i++){
 			preparedStatement.setObject(i+1, values[i]);
 		}
@@ -132,7 +230,7 @@ public class Channel {
 	}
 	public ResultSet executeSelect(String table, String fields, String whereScheme, Object... whereValues) throws SQLException {
 		String sql = "SELECT "+fields+" FROM "+table+" WHERE "+whereScheme;
-		PreparedStatement preparedStatement = connection.prepareStatement(sql);
+		PreparedStatement preparedStatement = dbConnection.prepareStatement(sql);
 		for (int i = 0; i < whereValues.length; i++){
 			preparedStatement.setObject(i+1, whereValues[i]);
 		}
@@ -150,7 +248,7 @@ public class Channel {
 
 		if(!connectedToDB||sessionId==-1||user.messagesInSession!=-1) return false;
 		try {
-			PreparedStatement preparedStatement = connection.prepareStatement("SELECT * FROM userSession WHERE userSession.sessionId = ? AND userSession.twitchID = ?");
+			PreparedStatement preparedStatement = dbConnection.prepareStatement("SELECT * FROM userSession WHERE userSession.sessionId = ? AND userSession.twitchID = ?");
 			preparedStatement.setInt(1, sessionId);
 			preparedStatement.setInt(2, user.getUserId());
 			ResultSet resultSet = preparedStatement.executeQuery();
@@ -170,7 +268,7 @@ public class Channel {
 		if(user.messagesInSession==-1) {
 			try {
 				String sql = "INSERT INTO userSession (sessionId,twitchID,totalMessages) VALUES (?,?,0)";
-				PreparedStatement preparedStatement = connection.prepareStatement(sql);
+				PreparedStatement preparedStatement = dbConnection.prepareStatement(sql);
 				preparedStatement.setInt(1, sessionId);
 				preparedStatement.setInt(2, user.getUserId());
 				preparedStatement.execute();
@@ -216,7 +314,7 @@ public class Channel {
 			mutableValues.append("ELSE mutable").append("\n END");
 			String sql = "UPDATE users SET buggycoins = "+coinsValues+", mutable = "+mutableValues+" WHERE users.twitchID IN "+whereStr1;
 			//System.out.println(sql);
-			PreparedStatement statement = connection.prepareStatement(sql);
+			PreparedStatement statement = dbConnection.prepareStatement(sql);
 			statement.execute();
 		} catch (CommunicationsException e) {
 			connectedToDB = false;
@@ -247,7 +345,7 @@ public class Channel {
 			valuesStr.append("ELSE totalMessages").append("\n END");
 			String sql = "UPDATE userSession SET totalMessages = "+valuesStr+" WHERE userSession.sessionId = ? AND userSession.twitchID IN "+whereStr1;
 			//System.out.println(sql);
-			PreparedStatement statement = connection.prepareStatement(sql);
+			PreparedStatement statement = dbConnection.prepareStatement(sql);
 			statement.setInt(1, sessionId);
 			statement.execute();
 			return true;
@@ -268,7 +366,7 @@ public class Channel {
 		if(!connectedToDB) return false;
 		try {
 			String sql = "INSERT INTO users (id,nickname,buggycoins,twitchID) VALUES (NULL,?,0,?)";
-			PreparedStatement st = connection.prepareStatement(sql);
+			PreparedStatement st = dbConnection.prepareStatement(sql);
 			st.setString(1, user.getDisplayName());
 			st.setInt(2, user.getUserId());
 			st.execute();
@@ -282,7 +380,7 @@ public class Channel {
 	public boolean startSession(){
 		if(!connectedToDB) return false;
 		try {
-			PreparedStatement preparedStatement = connection.prepareStatement("SELECT getOrCreateSession()");
+			PreparedStatement preparedStatement = dbConnection.prepareStatement("SELECT getOrCreateSession()");
 			ResultSet resultSet = preparedStatement.executeQuery();
 			resultSet.next();
 			sessionId = resultSet.getInt(1);
@@ -294,7 +392,7 @@ public class Channel {
 			return false;
 		}
 		try {
-			PreparedStatement preparedStatement = connection.prepareStatement("SELECT * FROM users ");
+			PreparedStatement preparedStatement = dbConnection.prepareStatement("SELECT * FROM users ");
 			ResultSet resultSet = preparedStatement.executeQuery();
 			while (resultSet.next()){
 				User user = new User(resultSet);
@@ -317,7 +415,7 @@ public class Channel {
 
 		try {
 			String sql = "UPDATE `sessions` SET `endDate` = CURRENT_TIMESTAMP, `ended` = '1' WHERE `sessions`.`id` = ?";
-			PreparedStatement statement = connection.prepareStatement(sql);
+			PreparedStatement statement = dbConnection.prepareStatement(sql);
 			statement.setInt(1, sessionId);
 			statement.execute();
 			sessionId = -1;
@@ -329,49 +427,24 @@ public class Channel {
 		return true;
 	}
 
-	void startConnectingDB(){
-		new Thread(() -> {
-			int tries = 0;
-			while (!connectedToDB) {
-				if(tries>0) {
-					long sec = (long) Math.pow(2, tries);
-					Twitch.log.info("Retrying in " + sec + "s");
-					try {
-						Thread.sleep(sec * 1000);
-					} catch (InterruptedException e) {
-						e.printStackTrace();
-					}
-				}
-				connectedToDB = connectToDB();
-				tries++;
-			}
-			if(tries>1)
-				Channels.sendToAll("Соединение с базой данных установлено спустя "+pluralizeMessage((tries), "попытку", "попытки","попыток") );
-		}).start();
+	public void startConnectingDB(){
 	}
-	void startDisconnectingDB(){
-		connectedToDB = false;
-		try {
-
-			connection.close();
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}
+	public void startDisconnectingDB(){
 	}
 
 
-	boolean connectToDB(){
+	public boolean connectToDB(){
 		try {
 
 			long lastTime = System.currentTimeMillis();
-			Twitch.log.info("Connecting to database");
+			Globals.log.info("Connecting to database");
 			DriverManager.setLoginTimeout(5);
-			connection = DriverManager.getConnection(Twitch.databaseUrl+"/"+channelName+"_botDB", Twitch.databaseLogin, Twitch.databasePass);
+			dbConnection = DriverManager.getConnection(Twitch.databaseUrl+"/"+channelName+"_botDB", Twitch.databaseLogin, Twitch.databasePass);
 
-			Twitch.log.info("Successfully connected to database "+channelName+"_botDB in "+(System.currentTimeMillis()-lastTime));
+			Globals.log.info("Successfully connected to database "+channelName+"_botDB in "+(System.currentTimeMillis()-lastTime));
 			return true;
 		} catch (SQLException e) {
-			Twitch.log.info("Failed to connect to database");
+			Globals.log.info("Failed to connect to database");
 			e.printStackTrace();
 		}
 		return false;

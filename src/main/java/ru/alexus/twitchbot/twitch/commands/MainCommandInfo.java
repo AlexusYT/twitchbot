@@ -1,7 +1,7 @@
 package ru.alexus.twitchbot.twitch.commands;
 
 import ru.alexus.twitchbot.Utils;
-import ru.alexus.twitchbot.twitch.Channel;
+import ru.alexus.twitchbot.shared.Channel;
 import ru.alexus.twitchbot.twitch.objects.MsgTags;
 import ru.alexus.twitchbot.twitch.objects.User;
 

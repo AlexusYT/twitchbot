@@ -1,8 +1,7 @@
 package ru.alexus.twitchbot.twitch.commands.regular;
 
-import org.thymeleaf.standard.processor.StandardRefAttributeTagProcessor;
 import ru.alexus.twitchbot.Utils;
-import ru.alexus.twitchbot.twitch.Channel;
+import ru.alexus.twitchbot.shared.Channel;
 import ru.alexus.twitchbot.twitch.Twitch;
 import ru.alexus.twitchbot.twitch.commands.CommandInfo;
 import ru.alexus.twitchbot.twitch.CommonMessages;

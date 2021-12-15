@@ -16,51 +16,18 @@
 
 package ru.alexus.twitchbot;
 
-import com.sun.net.httpserver.HttpExchange;
-import com.sun.net.httpserver.HttpHandler;
-import com.sun.net.httpserver.HttpServer;
 import ru.alexus.twitchbot.twitch.Twitch;
-
-import java.io.IOException;
-import java.io.OutputStream;
-import java.net.InetSocketAddress;
+import ru.alexus.twitchbot.web.Web;
 
 
 public class Main {
 
 	public static void main(String[] args) throws Exception {
 
-		Thread thread = new Thread(Twitch::startBot);
-		thread.start();
-		String port = System.getenv("PORT");
-		if(port==null) port = "80";
-		HttpServer server = HttpServer.create(new InetSocketAddress(Integer.parseInt(port)), 0);
-		server.createContext("/", new MyHandler());
-		server.createContext("/alexus_xx", new ChannelHandler());
-		server.createContext("/daxtionoff", new ChannelHandler());
-		server.setExecutor(null); // creates a default executor
-		server.start();
+		Thread twitchThread = new Thread(Twitch::startBot);
+		twitchThread.start();
+		Thread webThread = new Thread(Web::startWeb);
+		webThread.start();
 	}
-	static class ChannelHandler implements HttpHandler {
-		@Override
-		public void handle(HttpExchange t) throws IOException {
 
-			String response = "This is the response from "+t.getHttpContext().getPath();
-			t.sendResponseHeaders(200, response.length());
-			OutputStream os = t.getResponseBody();
-			os.write(response.getBytes());
-			os.close();
-		}
-	}
-	static class MyHandler implements HttpHandler {
-		@Override
-		public void handle(HttpExchange t) throws IOException {
-
-			String response = "This is the response";
-			t.sendResponseHeaders(200, response.length());
-			OutputStream os = t.getResponseBody();
-			os.write(response.getBytes());
-			os.close();
-		}
-	}
 }

@@ -1,5 +1,7 @@
 package ru.alexus.twitchbot.twitch.commands.broadcaster;
 
+import ru.alexus.twitchbot.Globals;
+import ru.alexus.twitchbot.shared.Channel;
 import ru.alexus.twitchbot.twitch.*;
 import ru.alexus.twitchbot.twitch.commands.CommandInfo;
 import ru.alexus.twitchbot.twitch.commands.CommandResult;
@@ -14,9 +16,9 @@ public class DisableCmd implements ICommand {
 		Channel info = Channels.getChannel(tags.getChannelName());
 
 		if(info.endSession()){
-			Twitch.log.info("Session ended for channel "+info.channelName);
+			Globals.log.info("Session ended for channel "+info.channelName);
 		}else{
-			Twitch.log.error("Failed to end session for channel "+info.channelName);
+			Globals.log.error("Failed to end session for channel "+info.channelName);
 		}
 		info.enabled = false;
 		result.resultMessage = info.goodbyeMsg;

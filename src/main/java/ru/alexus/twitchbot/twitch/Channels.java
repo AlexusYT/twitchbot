@@ -1,5 +1,7 @@
 package ru.alexus.twitchbot.twitch;
 
+import ru.alexus.twitchbot.Globals;
+import ru.alexus.twitchbot.shared.Channel;
 import ru.alexus.twitchbot.twitch.objects.User;
 
 import java.util.HashMap;
@@ -29,7 +31,7 @@ public class Channels {
 						K+=user.getSubMonths()/10.0;
 					}
 					user.addBuggycoins((int) ((2+(user.messagesInSession/100*2))*K));
-					Twitch.log.info("Added coins to user "+user.getDisplayName()+": "+user.getBuggycoins()+". Total messages "+user.messagesInSession);
+					Globals.log.info("Added coins to user "+user.getDisplayName()+": "+user.getBuggycoins()+". Total messages "+user.messagesInSession);
 					channel.setUserById(user.getUserId(), user);
 				}
 				channel.activeUsers.clear();

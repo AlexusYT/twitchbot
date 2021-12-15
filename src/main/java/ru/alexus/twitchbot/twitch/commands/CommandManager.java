@@ -2,6 +2,7 @@ package ru.alexus.twitchbot.twitch.commands;
 
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
+import ru.alexus.twitchbot.Globals;
 import ru.alexus.twitchbot.twitch.Twitch;
 import ru.alexus.twitchbot.twitch.commands.broadcaster.*;
 import ru.alexus.twitchbot.twitch.commands.owner.*;
@@ -67,14 +68,14 @@ public class CommandManager {
 					commands.put(alias, info);
 				else{
 					CommandInfo commandInfo = commands.get(alias);
-					Twitch.log.warn("Alias collision detected when registering command "+info.executor.getClass().getName()
+					Globals.log.warn("Alias collision detected when registering command "+info.executor.getClass().getName()
 							+"! Alias '"+alias+"' already registered by "+commandInfo.executor.getClass().getName());
 				}
 				commands.put(alias, info);
 			}
 			return info;
 		}catch (Exception e){
-			Twitch.log.error("Failed to register command", e);
+			Globals.log.error("Failed to register command", e);
 			return null;
 		}
 	}
@@ -93,12 +94,12 @@ public class CommandManager {
 					parentCommand.subCommands.put(alias, info);
 				else{
 					CommandInfo commandInfo = parentCommand.subCommands.get(alias);
-					Twitch.log.warn("Alias collision detected when registering subcommand "+info.executor.getClass().getName()
+					Globals.log.warn("Alias collision detected when registering subcommand "+info.executor.getClass().getName()
 							+"! Alias '"+alias+"' already registered by "+commandInfo.executor.getClass().getName());
 				}
 			}
 		}catch (Exception e){
-			Twitch.log.error("Failed to register command", e);
+			Globals.log.error("Failed to register command", e);
 		}
 	}
 	@Nullable

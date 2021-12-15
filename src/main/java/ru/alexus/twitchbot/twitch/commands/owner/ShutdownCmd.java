@@ -1,6 +1,6 @@
 package ru.alexus.twitchbot.twitch.commands.owner;
 
-import ru.alexus.twitchbot.twitch.Channel;
+import ru.alexus.twitchbot.shared.Channel;
 import ru.alexus.twitchbot.twitch.commands.CommandInfo;
 import ru.alexus.twitchbot.twitch.Twitch;
 import ru.alexus.twitchbot.twitch.commands.CommandResult;

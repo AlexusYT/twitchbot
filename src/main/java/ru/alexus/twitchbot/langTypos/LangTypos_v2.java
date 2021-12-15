@@ -2,6 +2,7 @@ package ru.alexus.twitchbot.langTypos;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
+import ru.alexus.twitchbot.Globals;
 import ru.alexus.twitchbot.twitch.Twitch;
 
 import java.io.*;
@@ -136,11 +137,6 @@ public class LangTypos_v2 {
         englishDictionary = new HashSet<>();
         new Thread(() -> {
             ClassLoader classloader = Thread.currentThread().getContextClassLoader();
-            InputStream is = classloader.getResourceAsStream("public/rusDict-new.txt");
-            if(is==null){
-                Twitch.log.info("Null");
-            }else
-                Twitch.log.info("Not Null");
             try (BufferedReader br = new BufferedReader(new InputStreamReader(
                     Objects.requireNonNull(classloader.getResourceAsStream("public/rusDict-new.txt"))))) {
 
@@ -173,7 +169,7 @@ public class LangTypos_v2 {
                 morFormRussianDictionary.add(Porter.stem(key));
             }
             loaded = true;
-            Twitch.log.info("Russian and English dictionaries loaded");
+            Globals.log.info("Russian and English dictionaries loaded");
         }).start();
 
 

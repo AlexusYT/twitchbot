@@ -1,7 +1,9 @@
 package ru.alexus.twitchbot.twitch;
 
 
+import ru.alexus.twitchbot.Globals;
 import ru.alexus.twitchbot.Utils;
+import ru.alexus.twitchbot.shared.Channel;
 import ru.alexus.twitchbot.twitch.commands.CommandInfo;
 import ru.alexus.twitchbot.twitch.commands.CommandManager;
 import ru.alexus.twitchbot.twitch.commands.CommandResult;
@@ -19,7 +21,7 @@ public class Twitch extends TwitchHelper {
 
 	public static void startBot(){
 		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-			log.info("Shutting down");
+			Globals.log.info("Shutting down");
 			for (Channel channel : Channels.getChannels().values()) {
 				channel.saveTotalMessagesToDB();
 				channel.saveBuggycoinsToDB();
@@ -27,24 +29,24 @@ public class Twitch extends TwitchHelper {
 
 		}));
 
-		log.info("Twitch bot thread started");
+		Globals.log.info("Twitch bot thread started");
 		Utils.init();
 		new Thread(TwitchHelper::senderThread).start();
 		new Thread(TwitchHelper::botListUpdater).start();
 		new Thread(TwitchHelper::connectionMonitor).start();
-		while (!shutdown){
+		while (!Globals.shutdownTwitchBot){
 			try {
 				connectToTwitch();
 				run();
 			}catch (Exception e){
-				log.error("Bot crashed. Restarting", e);
+				Globals.log.error("Bot crashed. Restarting", e);
 
 				try {
 					Thread.sleep(1000);
 				} catch (InterruptedException ignored) {}
 			}
 		}
-		log.info("Twitch bot thread ended");
+		Globals.log.info("Twitch bot thread ended");
 	}
 
 
@@ -55,11 +57,11 @@ public class Twitch extends TwitchHelper {
 			tags.channel.addUserToCurrentSession(user);
 		}else{
 			if(tags.channel.enabled)
-				Twitch.log.info("Failed to add user "+user.getDisplayName());
+				Globals.log.info("Failed to add user "+user.getDisplayName());
 		}
 		Profiler.endAndPrint();
 
-		log.info(user.getDisplayName()+": "+message);
+		Globals.log.info(user.getDisplayName()+": "+message);
 
 		Profiler.start("First msg check");
 		String msgToSend = "";
@@ -109,7 +111,7 @@ public class Twitch extends TwitchHelper {
 		Long lastUserSendTime = tags.channel.lastUserMsg.put(user.getUserId(), System.currentTimeMillis());
 		if(lastUserSendTime!=null&&lastUserSendTime+1000>System.currentTimeMillis()&&user.getLevel().ordinal() < EnumAccessLevel.BROADCASTER.ordinal()){
 			user.addBuggycoins(-20);
-			Twitch.log.info("User "+user.getDisplayName()+" flood detected!");
+			Globals.log.info("User "+user.getDisplayName()+" flood detected!");
 		}
 		tags.channel.setUserById(user.getUserId(), user);
 		Profiler.endAndPrint();
@@ -117,15 +119,15 @@ public class Twitch extends TwitchHelper {
 
 
 	public static void shutdownBot() {
-		Twitch.shutdown = true;
+		Globals.shutdownTwitchBot = true;
 	}
 
 
 	public static void onLeft(String user, String channel) {
-		log.info("User "+user+" left "+channel);
+		Globals.log.info("User "+user+" left "+channel);
 	}
 
 	public static void onJoin(String user, String channel){
-		log.info("User "+user+" joined "+channel);
+		Globals.log.info("User "+user+" joined "+channel);
 	}
 }

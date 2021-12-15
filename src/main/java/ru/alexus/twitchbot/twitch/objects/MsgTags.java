@@ -1,12 +1,9 @@
 package ru.alexus.twitchbot.twitch.objects;
 
-import ru.alexus.twitchbot.twitch.Channel;
+import ru.alexus.twitchbot.shared.Channel;
 import ru.alexus.twitchbot.twitch.Channels;
-import ru.alexus.twitchbot.twitch.commands.EnumAccessLevel;
 
-import java.awt.*;
 import java.util.Calendar;
-import java.util.HashMap;
 
 public class MsgTags{
 	private final User user;

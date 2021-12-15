@@ -1,16 +1,10 @@
 package ru.alexus.twitchbot.twitch;
 
-import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.core.config.Configurator;
-import org.apache.logging.log4j.core.config.builder.api.ConfigurationBuilder;
-import org.apache.logging.log4j.core.config.builder.api.ConfigurationBuilderFactory;
-import org.apache.logging.log4j.core.config.builder.impl.BuiltConfiguration;
-import org.apache.logging.log4j.core.layout.PatternLayout;
 import org.apache.tomcat.util.json.JSONParser;
 import org.apache.tomcat.util.json.ParseException;
+import ru.alexus.twitchbot.Globals;
 import ru.alexus.twitchbot.Utils;
+import ru.alexus.twitchbot.shared.Channel;
 import ru.alexus.twitchbot.twitch.commands.CommandInfo;
 import ru.alexus.twitchbot.twitch.objects.MsgTags;
 import ru.alexus.twitchbot.twitch.objects.User;
@@ -27,19 +21,13 @@ import java.util.Locale;
 
 public class TwitchHelper {
 	protected static LinkedList<String> viewerBots = new LinkedList<>();
-	public static Logger log;
 
 	private static BufferedWriter output;
 	private static BufferedReader input;
 	private static Socket socket;
 
 	private static long lastPingTime = 0;
-	public static boolean shutdown = false;
 
-	static {
-		configureLog4J();
-		log = LogManager.getLogger(Twitch.class.getSimpleName());
-	}
 
 	protected static void botListUpdater() {
 		while (true){
@@ -64,24 +52,6 @@ public class TwitchHelper {
 			}
 		}
 	}
-	protected static void configureLog4J() {
-		ConfigurationBuilder<BuiltConfiguration> builder = ConfigurationBuilderFactory.newConfigurationBuilder();
-
-		// configure a console appender
-		//"[%d{HH:mm:ss.SSS}][%t][%logger{6}][%-5level]: %msg%n"
-		builder.add(
-				builder.newAppender("stdout", "Console")
-						.add(
-								builder.newLayout(PatternLayout.class.getSimpleName())
-										.addAttribute("pattern", "[%d{HH:mm:ss.SSS}][%t][%level]: %msg%n")
-						)
-		);
-
-		builder.add(builder.newRootLogger(Level.INFO).add(builder.newAppenderRef("stdout")));
-
-		Configurator.initialize(builder.build());
-
-	}
 	protected static void run() throws IOException {
 
 
@@ -93,7 +63,7 @@ public class TwitchHelper {
 
 		String botNameOnServer = "";
 		int errorCount = 0;
-		while (!shutdown) {
+		while (!Globals.shutdownTwitchBot) {
 			String line;
 			while ((line = input.readLine()) != null) {
 				errorCount = 0;
@@ -108,7 +78,7 @@ public class TwitchHelper {
 					}else {
 						if(!botNameOnServer.isEmpty()) continue;
 						botNameOnServer = elements[2];
-						log.info("Successfully logged in to Twitch IRC");
+						Globals.log.info("Successfully logged in to Twitch IRC");
 					}
 					continue;
 				}
@@ -121,8 +91,10 @@ public class TwitchHelper {
 
 						config.connectedToIRC = elements[1].equals("JOIN");
 						if(config.connectedToIRC){
+							config.init();
 							config.startConnectingDB();
 						}else{
+							config.deinit();
 							config.startDisconnectingDB();
 							config.enabled = false;
 							Channels.removeChannel(channel);
@@ -147,10 +119,10 @@ public class TwitchHelper {
 					Twitch.onPrivMsg(tags, user, message);
 					Profiler.endAndPrint("onPrivMsg");
 				} else {
-					log.info(Arrays.toString(elements));
+					Globals.log.info(Arrays.toString(elements));
 				}
 
-				if (shutdown) {
+				if (Globals.shutdownTwitchBot) {
 					Channels.sendByeAll();
 					break;
 				}
@@ -165,7 +137,7 @@ public class TwitchHelper {
 
 
 	public static void sendToIrc(String text) throws IOException {
-		log.info("Sending to IRC: "+text);
+		Globals.log.info("Sending to IRC: "+text);
 
 		output.write(text+"\n");
 		output.flush();
@@ -173,7 +145,7 @@ public class TwitchHelper {
 
 	public static void joinChannel(String channel) {
 		try {
-			log.info("Joining channel: " + channel);
+			Globals.log.info("Joining channel: " + channel);
 			output.write("JOIN #" + channel + "\n");
 			output.flush();
 		} catch (IOException e) {
@@ -182,7 +154,7 @@ public class TwitchHelper {
 	}
 	public static void leftChannel(String channel) {
 		try {
-			log.info("Leaving channel: " + channel);
+			Globals.log.info("Leaving channel: " + channel);
 			output.write("PART #" + channel + "\n");
 			output.flush();
 		} catch (IOException e) {
@@ -211,7 +183,7 @@ public class TwitchHelper {
 		if(text.isEmpty()) return;
 		if(immediately){
 			try {
-				log.info("Sending to channel " + channel.channelName + " message immediately: " + text);
+				Globals.log.info("Sending to channel " + channel.channelName + " message immediately: " + text);
 				output.write("PRIVMSG #" + channel.channelName + " :" + text + "\n");
 				output.flush();
 			} catch (IOException e) {
@@ -222,7 +194,7 @@ public class TwitchHelper {
 			Profiler.start("Adding to queue");
 			if (channel.queueToSend.isEmpty()) channel.firstSend = System.currentTimeMillis();
 			channel.queueToSend.add(text);
-			log.info("Adding to channel " + channel.channelName + " queue: " + text);
+			Globals.log.info("Adding to channel " + channel.channelName + " queue: " + text);
 		}
 		Profiler.endAndPrint();
 	}
@@ -239,7 +211,7 @@ public class TwitchHelper {
 							delim=" | ";
 						}
 						if(!builder.toString().endsWith(".")) builder.append(".");
-						log.info("Flushing messages to channel " + channel.channelName);
+						Globals.log.info("Flushing messages to channel " + channel.channelName);
 						output.write("PRIVMSG #" + channel.channelName + " :" + builder + "\n");
 						channel.queueToSend.clear();
 					}
@@ -259,7 +231,7 @@ public class TwitchHelper {
 	protected static void connectionMonitor(){
 		while (true){
 			if(lastPingTime+6*60*1000<System.currentTimeMillis()){
-				log.info("Twitch is not responding. Reconnecting");
+				Globals.log.info("Twitch is not responding. Reconnecting");
 				for (Channel channel : Channels.getChannels().values()){
 					channel.saveTotalMessagesToDB();
 					channel.saveBuggycoinsToDB();
@@ -290,7 +262,7 @@ public class TwitchHelper {
 
 	protected static void connectToTwitch(){
 		lastPingTime = System.currentTimeMillis();
-		log.info("Connecting to Twitch IRC server");
+		Globals.log.info("Connecting to Twitch IRC server");
 		int tries = 0;
 		do{
 			try {
@@ -311,7 +283,7 @@ public class TwitchHelper {
 				e.printStackTrace();
 			}
 		}while (true);
-		log.info("Successfully connected to Twitch IRC server");
+		Globals.log.info("Successfully connected to Twitch IRC server");
 	}
 	protected static void disconnectFromTwitch(){
 

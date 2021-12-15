@@ -1,7 +1,7 @@
 package ru.alexus.twitchbot.twitch.commands.regular;
 
 import ru.alexus.twitchbot.Utils;
-import ru.alexus.twitchbot.twitch.Channel;
+import ru.alexus.twitchbot.shared.Channel;
 import ru.alexus.twitchbot.twitch.commands.CommandInfo;
 import ru.alexus.twitchbot.twitch.commands.CommandResult;
 import ru.alexus.twitchbot.twitch.commands.ICommand;

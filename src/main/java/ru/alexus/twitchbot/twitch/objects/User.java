@@ -1,6 +1,6 @@
 package ru.alexus.twitchbot.twitch.objects;
 
-import ru.alexus.twitchbot.twitch.Channel;
+import ru.alexus.twitchbot.shared.Channel;
 import ru.alexus.twitchbot.twitch.commands.EnumAccessLevel;
 
 import java.awt.*;

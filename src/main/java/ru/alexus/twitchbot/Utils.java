@@ -7,16 +7,10 @@ import ru.alexus.twitchbot.twitch.Profiler;
 import ru.alexus.twitchbot.twitch.WordCases;
 import ru.alexus.twitchbot.twitch.objects.MsgTags;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.net.URL;
-import java.net.URLConnection;
-import java.net.URLEncoder;
+import java.io.*;
+import java.net.*;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Random;
+import java.util.*;
 import java.util.regex.Pattern;
 
 public class Utils {
@@ -137,5 +131,41 @@ public class Utils {
 		}
 		return cases;
 	}
+	public static String sendPost(String address, HashMap<String, String> headers, String data) throws IOException {
+		HttpURLConnection http = (HttpURLConnection) new URL(address).openConnection();
+		http.setRequestMethod("POST");
 
+		http.setDoOutput(true);
+		if(headers!=null) {
+			for (Map.Entry<String, String> header : headers.entrySet()) {
+				http.setRequestProperty(header.getKey(), header.getValue());
+			}
+		}
+		final DataOutputStream out = new DataOutputStream(http.getOutputStream());
+		out.writeBytes(data);
+		out.flush();
+		out.close();
+		/*OutputStream os = http.getOutputStream();
+		os.write(URLEncoder.encode( data, StandardCharsets.UTF_8).getBytes());
+		/*BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(http.getOutputStream()));
+		writer.write(URLEncoder.encode( data, StandardCharsets.UTF_8));
+		writer.close();*/
+		StringBuilder builder = new StringBuilder();
+
+		try {
+			BufferedReader br = new BufferedReader(new InputStreamReader(http.getInputStream()));
+			String line;
+			while ((line = br.readLine()) != null) {
+				builder.append(line).append("\n");
+			}
+		}catch (Exception e){
+
+			BufferedReader br = new BufferedReader(new InputStreamReader(http.getErrorStream()));
+			String line;
+			while ((line = br.readLine()) != null) {
+				builder.append(line).append("\n");
+			}
+		}
+		return builder.toString();
+	}
 }
