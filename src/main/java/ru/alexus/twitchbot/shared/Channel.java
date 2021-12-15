@@ -124,7 +124,7 @@ public class Channel {
 			}catch (Exception ignored){}
 		}
 
-		HashMap<String, String> headers = new HashMap<>();
+		/*HashMap<String, String> headers = new HashMap<>();
 		headers.put("Client-Id", Globals.twitchClientId);;
 		headers.put("Twitch-eventsub-message-signature", "sha256=c6253817e0c540a25d450abef5d3e609aabae9152956b39706ad5c652b80639c");
 		headers.put("Twitch-eventsub-subscription-type", "channel.ban");
@@ -138,12 +138,12 @@ public class Channel {
 			System.out.println(Utils.sendPost("http://localhost/alexus_xx/callback", headers, body));
 		} catch (IOException e) {
 			e.printStackTrace();
-		}
-		/*try {
+		}*/
+		try {
 			subscribeEvent("channel.ban", Map.of("broadcaster_user_id", String.valueOf(channelId)));
 		} catch (Exception e) {
 			e.printStackTrace();
-		}*/
+		}
 
 	}
 
