@@ -26,8 +26,10 @@ class ChannelCallback implements HttpHandler {
 		BufferedReader br = new BufferedReader(new InputStreamReader(t.getRequestBody()));
 		StringBuilder clientBody = new StringBuilder();
 		String line;
+		String __delim = "";
 		while ((line = br.readLine()) != null) {
-			clientBody.append(line).append("\n");
+			clientBody.append(__delim).append(line);
+			__delim = "\n";
 		}
 		Headers requestHeaders = t.getRequestHeaders();
 
