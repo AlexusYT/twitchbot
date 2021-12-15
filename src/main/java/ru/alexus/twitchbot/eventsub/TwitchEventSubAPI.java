@@ -32,6 +32,7 @@ public class TwitchEventSubAPI {
 
 	public static EventSubInfo subscribeToEvent(String type, String version, String callback, Map<String, String> condition) throws IOException {
 		String secret = Utils.generateSecret();
+		System.out.println(secret);
 		JSONObject body = new JSONObject();
 		body.put("type", type);
 		body.put("version", version);
@@ -47,7 +48,6 @@ public class TwitchEventSubAPI {
 		headers.put("Authorization", "Bearer "+Globals.appAccessToken.getToken());
 		String respStr = Utils.sendPost("https://api.twitch.tv/helix/eventsub/subscriptions", headers, body.toString());
 		JSONObject response = new JSONObject(respStr);
-		System.out.println(respStr);
 		if(response.has("error")){
 			throw new RuntimeException(response.getString("error")+": "+response.getString("message"));
 		}
