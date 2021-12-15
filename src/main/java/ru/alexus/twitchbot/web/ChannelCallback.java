@@ -35,7 +35,7 @@ class ChannelCallback implements HttpHandler {
 		Globals.log.info("URI: "+t.getRequestURI().toString());
 		StringBuilder headers = new StringBuilder();
 		for(Map.Entry<String, List<String>> header : requestHeaders.entrySet()){
-			headers.append(header.getKey()).append(": ").append(header.getValue()).append("\n");
+			headers.append(header.getKey()).append(": ").append(header.getValue().get(0)).append("\n");
 		}
 		Globals.log.info("Headers: "+headers);
 		Globals.log.info("Body: "+clientBody);
