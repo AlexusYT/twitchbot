@@ -12,6 +12,7 @@ import ru.alexus.twitchbot.Utils;
 import ru.alexus.twitchbot.eventsub.EventSubInfo;
 import ru.alexus.twitchbot.eventsub.TwitchEventSubAPI;
 import ru.alexus.twitchbot.shared.Channel;
+import ru.alexus.twitchbot.twitch.Channels;
 
 import java.io.*;
 import java.net.*;
@@ -34,7 +35,7 @@ public class Web {
 
 		while (Globals.appAccessToken==null){
 			try {
-				Globals.appAccessToken = TwitchEventSubAPI.getAppAccessToken("viewing_activity_read", "channel:read:subscriptions", "channel:moderate");
+				Globals.appAccessToken = TwitchEventSubAPI.getAppAccessToken("viewing_activity_read", "channel:read:subscriptions", "channel:moderate", "channel:manage:redemptions");
 			}catch (Exception e) {
 				Globals.log.error("Failed to get app access token", e);
 				try {
@@ -69,6 +70,16 @@ public class Web {
 					}
 
 				}
+				new Thread(()->{
+					while (true){
+						try {
+							TimeUnit.MINUTES.sleep(1);
+						} catch (InterruptedException e) {
+							e.printStackTrace();
+						}
+						clearCallbacks();
+					}
+				});
 				Globals.log.info("Done");
 				Globals.readyToBotStart = true;
 
@@ -83,8 +94,20 @@ public class Web {
 			tries++;
 		}
 	}
+
+	private static void clearCallbacks(){
+
+		for (Channel channel : Channels.getChannels().values()){
+			HttpHandler handler = channel.httpContext.getHandler();
+			if(handler instanceof ChannelCallback callback){
+				callback.clearOldIds();
+			}
+		}
+	}
+
 	@NonNull
 	public static HttpContext registerChannel(@NonNull Channel channel){
+
 		server.createContext("/"+channel.channelName+"/callback", new ChannelCallback(channel));
 		return server.createContext("/"+channel.channelName, new ChannelHandler(channel));
 	}

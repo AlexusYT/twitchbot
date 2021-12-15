@@ -27,9 +27,13 @@ public class TwitchEventSubAPI {
 				"&scope="+scopesString));
 		return new AppAccessToken(root);
 	}
+	public static EventSubInfo resubscribeToEvent(EventSubInfo oldEvent) throws IOException {
+		return TwitchEventSubAPI.subscribeToEvent(oldEvent.getType(), oldEvent.getVersion(), oldEvent.getCallback(), oldEvent.getCondition());
+	}
+
 
 	public static EventSubInfo subscribeToEvent(String type, String version, String callback, Map<String, String> condition) throws IOException {
-		String secret = "0000000000";//Utils.generateSecret();
+		String secret = Utils.generateSecret();
 		System.out.println(secret);
 		JSONObject body = new JSONObject();
 		body.put("type", type);

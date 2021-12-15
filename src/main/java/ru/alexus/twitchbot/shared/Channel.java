@@ -18,15 +18,13 @@ import ru.alexus.twitchbot.twitch.objects.User;
 import ru.alexus.twitchbot.web.Web;
 
 import java.awt.*;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.sql.*;
 import java.util.*;
+import java.util.logging.Logger;
 
 import static ru.alexus.twitchbot.Utils.pluralizeMessage;
 
@@ -44,7 +42,7 @@ public class Channel {
 	public String goodbyeMsg;
 	public boolean enabled, connectedToIRC, connectedToDB;
 	public Connection dbConnection;
-	private HttpContext httpContext;
+	public HttpContext httpContext;
 	public LinkedList<String> queueToSend;
 	public long firstSend;
 	public int sessionId = -1;
@@ -109,6 +107,23 @@ public class Channel {
 
 	}
 
+	public void subscriptionRevoked(EventSubInfo subInfo){
+		Globals.log.info("Subscription "+subInfo.getType()+" revoked from "+channelName+". Reason: "+subInfo.getStatus());
+		if(subInfo.getStatus().equals("authorization_revoked")){
+			try{
+				subscriptions.put(subInfo.getType(), TwitchEventSubAPI.resubscribeToEvent(subInfo));
+			}catch (Exception e){
+				e.printStackTrace();
+			}
+		}
+	}
+
+	public void subscriptionNotification(EventSubInfo subInfo, JSONObject event) {
+		Globals.log.info("Subscription "+subInfo.getType()+" notified for "+channelName);
+		Globals.log.info("Event object: "+event);
+		Twitch.sendMsg(subInfo.getType(), this);
+	}
+
 	public void initRoomState(String str){
 		for (String tag : str.split(";")) {
 			String[] tagElem = tag.split("=");
@@ -123,29 +138,67 @@ public class Channel {
 				}
 			}catch (Exception ignored){}
 		}
+		/*String secret = "qwer";
 
-		/*HashMap<String, String> headers = new HashMap<>();
-		headers.put("Client-Id", Globals.twitchClientId);;
-		headers.put("Twitch-eventsub-message-signature", "sha256=c6253817e0c540a25d450abef5d3e609aabae9152956b39706ad5c652b80639c");
-		headers.put("Twitch-eventsub-subscription-type", "channel.ban");
-		headers.put("Twitch-eventsub-message-id", "8f7cfd33-2109-4aea-97c3-633b432cecdb");
-		headers.put("Twitch-eventsub-message-timestamp", "2021-12-15T13:02:27.710416989Z");
+		EventSubInfo eventSubInfo = new EventSubInfo("", "channel.ban", "1", "https://alexus-twitchbot.herokuapp.com/alexus_xx/callback", secret);
+		eventSubInfo.setStatus("webhook_callback_verification");
+
+		String body = "{\"subscription\":{\"id\":\"1aec1360-741a-4abe-bad7-d59e14a7ee27\",\"status\":\"webhook_callback_verification_pending\",\"type\":\"channel.ban\",\"version\":\"1\",\"condition\":{\"broadcaster_user_id\":\"134945794\"},\"transport\":{\"method\":\"webhook\",\"callback\":\"https://alexus-twitchbot.herokuapp.com/alexus_xx/callback\"},\"created_at\":\"2021-12-15T13:02:27.704816431Z\",\"cost\":0},\"challenge\":\"cVLoQh4IRXLKBopxhiHYXn7mohbv1ZiTW_LBx8HaUY0\"}";
+
+		HashMap<String, String> headers = new HashMap<>();
+		headers.put("Client-Id", Globals.twitchClientId);
+		String messageTimestamp = "2021-12-15T13:02:27.710416989Z";
+		headers.put("Twitch-eventsub-message-timestamp", messageTimestamp);
 		headers.put("Twitch-eventsub-message-type", "webhook_callback_verification");
+		headers.put("Twitch-eventsub-subscription-type", "channel.ban");
 		headers.put("Content-type", "application/json");
 		headers.put("Authorization", "Bearer "+Globals.appAccessToken.getToken());
-		String body = "{\"subscription\":{\"id\":\"1aec1360-741a-4abe-bad7-d59e14a7ee27\",\"status\":\"webhook_callback_verification_pending\",\"type\":\"channel.ban\",\"version\":\"1\",\"condition\":{\"broadcaster_user_id\":\"134945794\"},\"transport\":{\"method\":\"webhook\",\"callback\":\"https://alexus-twitchbot.herokuapp.com/alexus_xx/callback\"},\"created_at\":\"2021-12-15T13:02:27.704816431Z\",\"cost\":0},\"challenge\":\"cVLoQh4IRXLKBopxhiHYXn7mohbv1ZiTW_LBx8HaUY0\"}";
-		try {
-			System.out.println(Utils.sendPost("http://localhost/alexus_xx/callback", headers, body));
-		} catch (IOException e) {
-			e.printStackTrace();
+		subscriptions.put("channel.ban", eventSubInfo);
+		for (int j = 0; j < 24; j++) {
+			int finalJ = j;
+			new Thread(()->{
+				for (int i = 0; i < 100000; i++) {
+
+					String messageId = "8f7cfd33-2109-4aea-97c3-633b432cec"+ (finalJ) +" "+i;
+					headers.put("Twitch-eventsub-message-signature", "sha256="+Utils.hmacSha256(messageId+messageTimestamp+body, secret));
+					headers.put("Twitch-eventsub-message-id", messageId);
+					try {
+						sendPost("http://localhost/alexus_xx/callback", headers, body);
+						//System.out.println(result);
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+				}
+			}).start();
 		}*/
+
 		try {
 			subscribeEvent("channel.ban", Map.of("broadcaster_user_id", String.valueOf(channelId)));
+			subscribeEvent("channel.unban", Map.of("broadcaster_user_id", String.valueOf(channelId)));
+			subscribeEvent("channel.channel_points_custom_reward_redemption.add", Map.of("broadcaster_user_id", String.valueOf(channelId)));
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 
 	}
+	public static void sendPost(String address, HashMap<String, String> headers, String data) throws IOException {
+		HttpURLConnection http = (HttpURLConnection) new URL(address).openConnection();
+		http.setRequestMethod("POST");
+
+		http.setDoOutput(true);
+		if(headers!=null) {
+			for (Map.Entry<String, String> header : headers.entrySet()) {
+				http.setRequestProperty(header.getKey(), header.getValue());
+			}
+		}
+		final DataOutputStream out = new DataOutputStream(http.getOutputStream());
+		out.writeBytes(data);
+		out.close();
+		try {
+			http.getInputStream().close();
+		}catch (Exception e){}
+	}
+
 
 	public void addCoins(User user, int coins){
 		addCoins(user.getUserId(), coins);
@@ -432,11 +485,6 @@ public class Channel {
 		}
 
 		return true;
-	}
-
-	public void startConnectingDB(){
-	}
-	public void startDisconnectingDB(){
 	}
 
 

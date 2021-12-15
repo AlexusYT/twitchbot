@@ -92,10 +92,8 @@ public class TwitchHelper {
 						config.connectedToIRC = elements[1].equals("JOIN");
 						if(config.connectedToIRC){
 							config.init();
-							config.startConnectingDB();
 						}else{
 							config.deinit();
-							config.startDisconnectingDB();
 							config.enabled = false;
 							Channels.removeChannel(channel);
 						}
@@ -243,7 +241,7 @@ public class TwitchHelper {
 						channel.saveTotalMessagesToDB();
 						channel.saveBuggycoinsToDB();
 					}
-					channel.startDisconnectingDB();
+					//channel.deinit();
 					channel.connectedToIRC = false;
 					channel.connectedToDB = channel.connectToDB();
 				}

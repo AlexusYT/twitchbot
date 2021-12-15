@@ -8,25 +8,44 @@ import java.util.Map;
 
 public class EventSubInfo {
 	private final String id;
-	private final String status;
+	private String status;
 	private final String type;
-	private final HashMap<String, Object> condition;
+	private final String version;
+	private final HashMap<String, String> condition = new HashMap<>();
 	private final String callback;
 	private String secret;
 
+	public EventSubInfo(String id, String type, String version, String callback, String secret) {
+		this.id = id;
+		this.type = type;
+		this.version = version;
+		this.callback = callback;
+		this.secret = secret;
+	}
 
 	public EventSubInfo(JSONObject root){
 
 		id = root.getString("id");
 		status = root.getString("status");
+		version = root.getString("version");
 		type = root.getString("type");
-		condition = (HashMap<String, Object>) root.getJSONObject("condition").toMap();
+		for(var entry : root.getJSONObject("condition").toMap().entrySet()){
+			condition.put(entry.getKey(), (String) entry.getValue());
+		}
 		callback = root.getJSONObject("transport").getString("callback");
 	}
 
 	public EventSubInfo(JSONObject root, String secret){
 		this(root);
 		this.secret = secret;
+	}
+
+	public String getVersion() {
+		return version;
+	}
+
+	public void setStatus(String status) {
+		this.status = status;
 	}
 
 	public String getSecret() {
@@ -45,7 +64,7 @@ public class EventSubInfo {
 		return type;
 	}
 
-	public HashMap<String, Object> getCondition() {
+	public HashMap<String, String> getCondition() {
 		return condition;
 	}
 
