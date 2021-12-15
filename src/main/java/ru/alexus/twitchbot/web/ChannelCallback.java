@@ -20,21 +20,19 @@ class ChannelCallback implements HttpHandler {
 
 	@Override
 	public void handle(HttpExchange t) throws IOException {
-		System.out.println("Method: "+t.getRequestMethod());
+		Globals.log.info("Method: "+t.getRequestMethod());
 		BufferedReader br = new BufferedReader(new InputStreamReader(t.getRequestBody()));
-		StringBuilder builder = new StringBuilder();
 		String line;
 		while ((line = br.readLine()) != null) {
-			builder.append(line).append("\n");
+			Globals.log.info("Body: "+line);
 		}
-		System.out.println("Body: "+builder);
-		System.out.println("URI: "+t.getRequestURI().toString());
+		Globals.log.info("URI: "+t.getRequestURI().toString());
 		StringBuilder headers = new StringBuilder();
 
 		for(Map.Entry<String, List<String>> header : t.getRequestHeaders().entrySet()){
 			headers.append(header.getKey()).append(": ").append(header.getValue()).append("\n");
 		}
-		System.out.print("Headers: "+headers);
+		Globals.log.info("Headers: "+headers);
 		String ret = "test";
 		t.sendResponseHeaders(200, ret.length());
 		OutputStream os = t.getResponseBody();
