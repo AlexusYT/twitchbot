@@ -104,6 +104,7 @@ public class Channel {
 	}
 
 	public void subscribeEvent(String type, Map<String, String> conditions) throws IOException {
+		Globals.log.info("Subscribing to event "+type+" for "+channelName);
 		subscriptions.put(type, TwitchEventSubAPI.subscribeToEvent(type, "1", channelName+"/callback", conditions));
 
 	}
