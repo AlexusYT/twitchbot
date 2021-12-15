@@ -7,6 +7,8 @@ import ru.alexus.twitchbot.twitch.Profiler;
 import ru.alexus.twitchbot.twitch.WordCases;
 import ru.alexus.twitchbot.twitch.objects.MsgTags;
 
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 import java.io.*;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
@@ -132,14 +134,15 @@ public class Utils {
 		}
 		return cases;
 	}
-	public static String getHash(byte[] bytes, String hash) {
+	public static String hmacSha256(String value, String key) {
 		try {
-			MessageDigest instance = MessageDigest.getInstance(hash);
-			instance.reset();
-			instance.update(bytes);
+			Mac mac = Mac.getInstance("HmacSHA256");
+			mac.init(new SecretKeySpec(key.getBytes(), "HmacSHA256"));
+
 			StringBuilder sb = new StringBuilder();
-			for(byte b : instance.digest()) sb.append(String.format("%02x", b));
+			for(byte b : mac.doFinal(value.getBytes())) sb.append(String.format("%02x", b));
 			return sb.toString();
+
 		} catch (Exception e) {
 			return "";
 		}

@@ -124,26 +124,26 @@ public class Channel {
 			}catch (Exception ignored){}
 		}
 
-		/*HashMap<String, String> headers = new HashMap<>();
+		HashMap<String, String> headers = new HashMap<>();
 		headers.put("Client-Id", Globals.twitchClientId);;
-		headers.put("Twitch-eventsub-message-signature", "sha256=dac28c66f82eb7e13a4b6febf2092e53c0587850b7e8de8e978db5b7e386996b");
+		headers.put("Twitch-eventsub-message-signature", "sha256=c6253817e0c540a25d450abef5d3e609aabae9152956b39706ad5c652b80639c");
 		headers.put("Twitch-eventsub-subscription-type", "channel.ban");
-		headers.put("Twitch-eventsub-message-id", "e860c1c2-4fad-440a-879a-ff54f21ebc82");
-		headers.put("Twitch-eventsub-message-timestamp", "2021-12-15T12:46:27.94478112Z");
+		headers.put("Twitch-eventsub-message-id", "8f7cfd33-2109-4aea-97c3-633b432cecdb");
+		headers.put("Twitch-eventsub-message-timestamp", "2021-12-15T13:02:27.710416989Z");
 		headers.put("Twitch-eventsub-message-type", "webhook_callback_verification");
 		headers.put("Content-type", "application/json");
 		headers.put("Authorization", "Bearer "+Globals.appAccessToken.getToken());
-		String body = "{\"subscription\":{\"id\":\"91e04a55-5853-4fa0-a4af-7fdfb4876414\",\"status\":\"webhook_callback_verification_pending\",\"type\":\"channel.ban\",\"version\":\"1\",\"condition\":{\"broadcaster_user_id\":\"134945794\"},\"transport\":{\"method\":\"webhook\",\"callback\":\"https://alexus-twitchbot.herokuapp.com/alexus_xx/callback\"},\"created_at\":\"2021-12-15T12:46:27.939756896Z\",\"cost\":0},\"challenge\":\"gBmIjGKQJPgKTNn91RKMOEbG51bNyuFKWZdfsDFcltk\"}";
+		String body = "{\"subscription\":{\"id\":\"1aec1360-741a-4abe-bad7-d59e14a7ee27\",\"status\":\"webhook_callback_verification_pending\",\"type\":\"channel.ban\",\"version\":\"1\",\"condition\":{\"broadcaster_user_id\":\"134945794\"},\"transport\":{\"method\":\"webhook\",\"callback\":\"https://alexus-twitchbot.herokuapp.com/alexus_xx/callback\"},\"created_at\":\"2021-12-15T13:02:27.704816431Z\",\"cost\":0},\"challenge\":\"cVLoQh4IRXLKBopxhiHYXn7mohbv1ZiTW_LBx8HaUY0\"}";
 		try {
 			System.out.println(Utils.sendPost("http://localhost/alexus_xx/callback", headers, body));
 		} catch (IOException e) {
 			e.printStackTrace();
-		}*/
-		try {
+		}
+		/*try {
 			subscribeEvent("channel.ban", Map.of("broadcaster_user_id", String.valueOf(channelId)));
 		} catch (Exception e) {
 			e.printStackTrace();
-		}
+		}*/
 
 	}
 

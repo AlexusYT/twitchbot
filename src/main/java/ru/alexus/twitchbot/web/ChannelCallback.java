@@ -10,6 +10,8 @@ import ru.alexus.twitchbot.Utils;
 import ru.alexus.twitchbot.eventsub.EventSubInfo;
 import ru.alexus.twitchbot.shared.Channel;
 
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -60,18 +62,19 @@ class ChannelCallback implements HttpHandler {
 			return;
 		}
 
-		/*EventSubInfo subInfo = channel.subscriptions.get(subscriptionType);
+		EventSubInfo subInfo = channel.subscriptions.get(subscriptionType);
 
 		if(subInfo==null) {
 			Globals.log.error("Event not found "+subscriptionType+" for channel "+channel.channelName);
 			respond(t, 400);
 			return;
-		}*/
-		String secret = "b4472de26e830699b40ee9940a8acebe9e201dd3722a02a0c3931701793065c1d035";
-		String hmacMessage = secret+messageId+messageTimestamp+clientBody;
+		}
 
-		System.out.println(hmacMessage);
-		System.out.println(Utils.getHash(hmacMessage.getBytes(StandardCharsets.UTF_8), "SHA-256"));
+		if(!messageHMAC.equals("sha256="+Utils.hmacSha256(messageId+messageTimestamp+clientBody, subInfo.getSecret()))){
+			Globals.log.error("HMAC mismatch for event "+subscriptionType+" for channel "+channel.channelName);
+			respond(t, 400);
+			return;
+		}
 
 		try {
 			if (messageType.equals("webhook_callback_verification")) {
