@@ -42,10 +42,11 @@ class ChannelCallback implements HttpHandler {
 
 
 		String messageType = requestHeaders.getFirst("Twitch-Eventsub-Message-Type");
-		Globals.log.info("messageType: "+messageType);
 		if(messageType!=null){
 			if(messageType.equals("webhook_callback_verification")){
+				Globals.log.info("clientBody: "+clientBody);
 				JSONObject body = new JSONObject(clientBody);
+				Globals.log.info("body: "+body);
 				String challenge = body.getString("challenge");
 				Globals.log.info("Challenge: "+challenge);
 
