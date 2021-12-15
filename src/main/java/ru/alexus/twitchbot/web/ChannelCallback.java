@@ -30,6 +30,17 @@ class ChannelCallback implements HttpHandler {
 			clientBody.append(line).append("\n");
 		}
 		Headers requestHeaders = t.getRequestHeaders();
+
+		Globals.log.info("Method: "+t.getRequestMethod());
+		Globals.log.info("URI: "+t.getRequestURI().toString());
+		StringBuilder headers = new StringBuilder();
+		for(Map.Entry<String, List<String>> header : requestHeaders.entrySet()){
+			headers.append(header.getKey()).append(": ").append(header.getValue()).append("\n");
+		}
+		Globals.log.info("Headers: "+headers);
+		Globals.log.info("Body: "+clientBody);
+
+
 		if(requestHeaders.containsKey("Twitch-Eventsub-Message-Type")){
 			String messageType = requestHeaders.getFirst("witch-Eventsub-Message-Type");
 			if(messageType.equals("webhook_callback_verification")){
@@ -43,15 +54,6 @@ class ChannelCallback implements HttpHandler {
 				return;
 			}
 		}
-
-		Globals.log.info("Method: "+t.getRequestMethod());
-		Globals.log.info("URI: "+t.getRequestURI().toString());
-		StringBuilder headers = new StringBuilder();
-		for(Map.Entry<String, List<String>> header : requestHeaders.entrySet()){
-			headers.append(header.getKey()).append(": ").append(header.getValue()).append("\n");
-		}
-		Globals.log.info("Headers: "+headers);
-		Globals.log.info("Body: "+clientBody);
 
 		String ret = "test";
 		t.sendResponseHeaders(200, ret.length());
