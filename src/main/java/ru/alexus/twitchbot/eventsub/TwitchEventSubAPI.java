@@ -47,6 +47,7 @@ public class TwitchEventSubAPI {
 		headers.put("Authorization", "Bearer "+Globals.appAccessToken.getToken());
 		String respStr = Utils.sendPost("https://api.twitch.tv/helix/eventsub/subscriptions", headers, body.toString());
 		JSONObject response = new JSONObject(respStr);
+		System.out.println(respStr);
 		if(response.has("error")){
 			throw new RuntimeException(response.getString("error")+": "+response.getString("message"));
 		}
