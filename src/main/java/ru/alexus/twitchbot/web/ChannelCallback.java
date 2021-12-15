@@ -47,11 +47,8 @@ class ChannelCallback implements HttpHandler {
 		try {
 			if (messageType != null) {
 				if (messageType.equals("webhook_callback_verification")) {
-					Globals.log.info("clientBody: " + clientBody);
-					JSONObject body = new JSONObject(clientBody);
-					Globals.log.info("body: " + body);
+					JSONObject body = new JSONObject(clientBody.toString());
 					String challenge = body.getString("challenge");
-					Globals.log.info("Challenge: " + challenge);
 
 					t.sendResponseHeaders(200, challenge.length());
 					OutputStream os = t.getResponseBody();

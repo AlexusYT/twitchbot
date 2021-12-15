@@ -124,22 +124,22 @@ public class Channel {
 			}catch (Exception ignored){}
 		}
 
-		HashMap<String, String> headers = new HashMap<>();
+		/*HashMap<String, String> headers = new HashMap<>();
 		headers.put("Client-Id", Globals.twitchClientId);;
 		headers.put("Twitch-eventsub-message-type", "webhook_callback_verification");
 		headers.put("Content-type", "application/json");
 		headers.put("Authorization", "Bearer "+Globals.appAccessToken.getToken());
 		String body = "{\"subscription\":{\"id\":\"28620a53-9452-400f-8202-7ece0a09a7eb\",\"status\":\"webhook_callback_verification_pending\",\"type\":\"channel.ban\",\"version\":\"1\",\"condition\":{\"broadcaster_user_id\":\"134945794\"},\"transport\":{\"method\":\"webhook\",\"callback\":\"https://alexus-twitchbot.herokuapp.com/alexus_xx/callback\"},\"created_at\":\"2021-12-15T10:12:46.849332749Z\",\"cost\":0},\"challenge\":\"nRgjbUR6tfhkM3BFW5sPlAUNm-SQxgyU5ap7Gz2-jrQ\"}";
 		try {
-			Utils.sendPost(Globals.serverAddress+"/alexus_xx/callback", headers, body);
+			System.out.println(Utils.sendPost("http://localhost/alexus_xx/callback", headers, body));
 		} catch (IOException e) {
 			e.printStackTrace();
-		}
-		/*try {
+		}*/
+		try {
 			subscribeEvent("channel.ban", Map.of("broadcaster_user_id", String.valueOf(channelId)));
 		} catch (Exception e) {
 			e.printStackTrace();
-		}*/
+		}
 
 	}
 
