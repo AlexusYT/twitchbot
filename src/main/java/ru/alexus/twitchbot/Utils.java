@@ -10,6 +10,7 @@ import ru.alexus.twitchbot.twitch.objects.MsgTags;
 import java.io.*;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.*;
 import java.util.regex.Pattern;
 
@@ -130,6 +131,18 @@ public class Utils {
 			return null;
 		}
 		return cases;
+	}
+	public static String getHash(byte[] bytes, String hash) {
+		try {
+			MessageDigest instance = MessageDigest.getInstance(hash);
+			instance.reset();
+			instance.update(bytes);
+			StringBuilder sb = new StringBuilder();
+			for(byte b : instance.digest()) sb.append(String.format("%02x", b));
+			return sb.toString();
+		} catch (Exception e) {
+			return "";
+		}
 	}
 	public static String sendPost(String address, HashMap<String, String> headers, String data) throws IOException {
 		HttpURLConnection http = (HttpURLConnection) new URL(address).openConnection();

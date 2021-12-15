@@ -4,7 +4,10 @@ import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import org.json.JSONObject;
+import org.springframework.lang.NonNull;
 import ru.alexus.twitchbot.Globals;
+import ru.alexus.twitchbot.Utils;
+import ru.alexus.twitchbot.eventsub.EventSubInfo;
 import ru.alexus.twitchbot.shared.Channel;
 
 import java.io.*;
@@ -44,27 +47,58 @@ class ChannelCallback implements HttpHandler {
 
 
 		String messageType = requestHeaders.getFirst("Twitch-Eventsub-Message-Type");
-		try {
-			if (messageType != null) {
-				if (messageType.equals("webhook_callback_verification")) {
-					JSONObject body = new JSONObject(clientBody.toString());
-					String challenge = body.getString("challenge");
+		String messageId = requestHeaders.getFirst("Twitch-Eventsub-Message-Id");
+		String messageHMAC = requestHeaders.getFirst("Twitch-Eventsub-Message-Signature");
+		String subscriptionType = requestHeaders.getFirst("Twitch-Eventsub-Subscription-Type");
+		String messageTimestamp = requestHeaders.getFirst("Twitch-Eventsub-Message-Timestamp");
+		//String subscriptionVersion = requestHeaders.getFirst("Twitch-Eventsub-Subscription-Version");
 
-					t.sendResponseHeaders(200, challenge.length());
-					OutputStream os = t.getResponseBody();
-					os.write(challenge.getBytes(StandardCharsets.UTF_8));
-					os.close();
-					return;
-				}
+		if(messageHMAC==null||messageType==null||messageId==null||subscriptionType==null||messageTimestamp==null) {
+			Globals.log.error("One of important headers is null");
+			respond(t, 400);
+			return;
+		}
+
+		EventSubInfo subInfo = channel.subscriptions.get(subscriptionType);
+
+		if(subInfo==null) {
+			Globals.log.error("Event not found "+subscriptionType+" for channel "+channel.channelName);
+			respond(t, 400);
+			return;
+		}
+
+		String hmacMessage = subInfo.getSecret()+messageId+messageTimestamp+clientBody;
+		System.out.println(Utils.getHash(hmacMessage.getBytes(StandardCharsets.UTF_8), "SHA-256"));
+
+		try {
+			if (messageType.equals("webhook_callback_verification")) {
+				JSONObject body = new JSONObject(clientBody.toString());
+				String challenge = body.getString("challenge");
+
+				respond(t, 200, challenge);
+				return;
 			}
 		}catch (Exception e){
 			Globals.log.error("Error occurred", e);
+			respond(t, 400);
+			return;
 		}
 
-		String ret = "test";
-		t.sendResponseHeaders(200, ret.length());
-		OutputStream os = t.getResponseBody();
-		os.write(ret.getBytes(StandardCharsets.UTF_8));
+		respond(t, 200);
+	}
+
+	private void respond(HttpExchange exchange, int code) throws IOException {
+		respond(exchange, code, null);
+	}
+
+	private void respond(@NonNull HttpExchange exchange, int code, String body) throws IOException {
+		OutputStream os = exchange.getResponseBody();
+		if(body==null){
+			exchange.sendResponseHeaders(code, 0);
+		}else{
+			exchange.sendResponseHeaders(code, body.length());
+			os.write(body.getBytes(StandardCharsets.UTF_8));
+		}
 		os.close();
 	}
 }
