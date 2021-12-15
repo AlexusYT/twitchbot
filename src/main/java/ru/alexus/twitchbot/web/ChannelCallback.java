@@ -61,7 +61,7 @@ class ChannelCallback implements HttpHandler {
 				}
 			}
 		}catch (Exception e){
-			Globals.log.error(e);
+			Globals.log.error("Error occurred", e);
 		}
 
 		String ret = "test";

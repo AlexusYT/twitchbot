@@ -38,7 +38,7 @@ public class TwitchEventSubAPI {
 		body.put("condition", new JSONObject(condition));
 		JSONObject transport = new JSONObject();
 		transport.put("method", "webhook");
-		transport.put("callback", "https://alexus-twitchbot.herokuapp.com/"+callback);
+		transport.put("callback", Globals.serverAddress+callback);
 		transport.put("secret", secret);
 		body.put("transport", transport);
 		HashMap<String, String> headers = new HashMap<>();

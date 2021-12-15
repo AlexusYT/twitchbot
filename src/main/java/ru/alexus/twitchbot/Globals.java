@@ -17,6 +17,7 @@ public class Globals {
 	public static Logger log;
 	public static String twitchClientId = "cxxcdpgmikulrcqf6wb899qxgfgrkw";
 	public static String twitchSecret = "9fubbi0620woz6c65kf1cag7u2c4ao";
+	public static String serverAddress = "https://alexus-twitchbot.herokuapp.com/";
 	public static AppAccessToken appAccessToken = null;
 	public static boolean readyToBotStart = false;
 
