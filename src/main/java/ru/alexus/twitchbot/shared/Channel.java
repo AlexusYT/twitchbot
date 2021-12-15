@@ -126,10 +126,14 @@ public class Channel {
 
 		/*HashMap<String, String> headers = new HashMap<>();
 		headers.put("Client-Id", Globals.twitchClientId);;
+		headers.put("Twitch-eventsub-message-signature", "sha256=dac28c66f82eb7e13a4b6febf2092e53c0587850b7e8de8e978db5b7e386996b");
+		headers.put("Twitch-eventsub-subscription-type", "channel.ban");
+		headers.put("Twitch-eventsub-message-id", "e860c1c2-4fad-440a-879a-ff54f21ebc82");
+		headers.put("Twitch-eventsub-message-timestamp", "2021-12-15T12:46:27.94478112Z");
 		headers.put("Twitch-eventsub-message-type", "webhook_callback_verification");
 		headers.put("Content-type", "application/json");
 		headers.put("Authorization", "Bearer "+Globals.appAccessToken.getToken());
-		String body = "{\"subscription\":{\"id\":\"28620a53-9452-400f-8202-7ece0a09a7eb\",\"status\":\"webhook_callback_verification_pending\",\"type\":\"channel.ban\",\"version\":\"1\",\"condition\":{\"broadcaster_user_id\":\"134945794\"},\"transport\":{\"method\":\"webhook\",\"callback\":\"https://alexus-twitchbot.herokuapp.com/alexus_xx/callback\"},\"created_at\":\"2021-12-15T10:12:46.849332749Z\",\"cost\":0},\"challenge\":\"nRgjbUR6tfhkM3BFW5sPlAUNm-SQxgyU5ap7Gz2-jrQ\"}";
+		String body = "{\"subscription\":{\"id\":\"91e04a55-5853-4fa0-a4af-7fdfb4876414\",\"status\":\"webhook_callback_verification_pending\",\"type\":\"channel.ban\",\"version\":\"1\",\"condition\":{\"broadcaster_user_id\":\"134945794\"},\"transport\":{\"method\":\"webhook\",\"callback\":\"https://alexus-twitchbot.herokuapp.com/alexus_xx/callback\"},\"created_at\":\"2021-12-15T12:46:27.939756896Z\",\"cost\":0},\"challenge\":\"gBmIjGKQJPgKTNn91RKMOEbG51bNyuFKWZdfsDFcltk\"}";
 		try {
 			System.out.println(Utils.sendPost("http://localhost/alexus_xx/callback", headers, body));
 		} catch (IOException e) {

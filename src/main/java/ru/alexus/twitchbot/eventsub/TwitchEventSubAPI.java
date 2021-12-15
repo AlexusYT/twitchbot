@@ -2,12 +2,10 @@ package ru.alexus.twitchbot.eventsub;
 
 import org.json.JSONObject;
 import org.springframework.lang.NonNull;
-import org.springframework.lang.Nullable;
 import ru.alexus.twitchbot.Globals;
 import ru.alexus.twitchbot.Utils;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
@@ -31,7 +29,7 @@ public class TwitchEventSubAPI {
 	}
 
 	public static EventSubInfo subscribeToEvent(String type, String version, String callback, Map<String, String> condition) throws IOException {
-		String secret = Utils.generateSecret();
+		String secret = "0000000000";//Utils.generateSecret();
 		System.out.println(secret);
 		JSONObject body = new JSONObject();
 		body.put("type", type);
@@ -43,7 +41,7 @@ public class TwitchEventSubAPI {
 		transport.put("secret", secret);
 		body.put("transport", transport);
 		HashMap<String, String> headers = new HashMap<>();
-		headers.put("Client-Id", Globals.twitchClientId);;
+		headers.put("Client-Id", Globals.twitchClientId);
 		headers.put("Content-type", "application/json");
 		headers.put("Authorization", "Bearer "+Globals.appAccessToken.getToken());
 		String respStr = Utils.sendPost("https://api.twitch.tv/helix/eventsub/subscriptions", headers, body.toString());
@@ -63,7 +61,7 @@ public class TwitchEventSubAPI {
 			body="after="+page;
 		}
 		HashMap<String, String> headers = new HashMap<>();
-		headers.put("Client-Id", Globals.twitchClientId);;
+		headers.put("Client-Id", Globals.twitchClientId);
 		headers.put("Content-type", "application/json");
 		headers.put("Authorization", "Bearer "+Globals.appAccessToken.getToken());
 		String respStr = Utils.sendGet("https://api.twitch.tv/helix/eventsub/subscriptions", headers, body);
@@ -81,7 +79,7 @@ public class TwitchEventSubAPI {
 
 	public static int deleteSubscribedEvent(EventSubInfo event) throws IOException {
 		HashMap<String, String> headers = new HashMap<>();
-		headers.put("Client-Id", Globals.twitchClientId);;
+		headers.put("Client-Id", Globals.twitchClientId);
 		headers.put("Content-type", "application/json");
 		headers.put("Authorization", "Bearer "+Globals.appAccessToken.getToken());
 
