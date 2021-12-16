@@ -12,6 +12,7 @@ import ru.alexus.twitchbot.eventsub.TwitchEventSubAPI;
 import ru.alexus.twitchbot.eventsub.UserAccessToken;
 import ru.alexus.twitchbot.eventsub.events.Event;
 import ru.alexus.twitchbot.eventsub.events.RedemptionAdd;
+import ru.alexus.twitchbot.eventsub.objects.Reward;
 import ru.alexus.twitchbot.twitch.Channels;
 import ru.alexus.twitchbot.twitch.Twitch;
 import ru.alexus.twitchbot.twitch.commands.CommandInfo;
@@ -133,7 +134,12 @@ public class Channel {
 	}
 	public void onRewardRedemption(EventSubInfo subInfo, RedemptionAdd event){
 		User user = this.getUserById(event.getUserId());
-		Globals.log.info("User "+user.getDisplayName()+" redeemed reward "+event.getReward().getTitle()+" in "+channelName);
+		Reward reward = event.getReward();
+		Globals.log.info("User "+user.getDisplayName()+" redeemed reward "+reward+" in "+channelName);
+		if(reward.getId().equals("044a7ea1-8e62-476d-b58a-30b215a778cd")){
+			this.addCoins(user, 200);
+			Twitch.sendMsg(user.getDisplayName()+" купил 200 коинов за "+Utils.pluralizeMessagePoints(reward.getCost())+" канала", this);
+		}
 
 	}
 

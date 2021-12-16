@@ -107,7 +107,9 @@ public class Utils {
 	}
 	public static String pluralizeMessageCoin(int value){
 		return Utils.pluralizeMessage(value, "коин", "коина", "коинов");
-
+	}
+	public static String pluralizeMessagePoints(int value){
+		return Utils.pluralizeMessage(value, "балл", "балла", "баллов");
 	}
 
 	public static WordCases getWordCase(String word){

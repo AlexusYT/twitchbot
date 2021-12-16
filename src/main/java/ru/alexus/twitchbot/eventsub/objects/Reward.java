@@ -30,4 +30,13 @@ public class Reward {
 	public String getPrompt() {
 		return prompt;
 	}
+
+	@Override
+	public String toString() {
+		return "Reward{" +
+				"id='" + id + '\'' +
+				", title='" + title + '\'' +
+				", cost=" + cost +
+				'}';
+	}
 }

@@ -122,16 +122,20 @@ public class Web {
 	static class MyHandler implements HttpHandler {
 		@Override
 		public void handle(HttpExchange t) throws IOException {
-			String twitchResponse = t.getRequestURI().toString();
-			String code = twitchResponse.substring(twitchResponse.indexOf("code=")+5, twitchResponse.indexOf("&"));
 			try {
-				Globals.userAccessToken = TwitchEventSubAPI.getUserAccessToken(code);
-				System.out.println("User token: " + Globals.userAccessToken);
+				String twitchResponse = t.getRequestURI().toString();
+				String code = twitchResponse.substring(twitchResponse.indexOf("code=") + 5, twitchResponse.indexOf("&"));
+				try {
+					Globals.userAccessToken = TwitchEventSubAPI.getUserAccessToken(code);
+					System.out.println("User token: " + Globals.userAccessToken);
+
+				} catch (Exception e) {
+					Globals.log.error("Failed to get user token", e);
+				}
 
 			}catch (Exception e){
-				Globals.log.error("Failed to get user token", e);
-			}
 
+			}
 			//String response = "This is the response "+code;
 			t.sendResponseHeaders(200, 0/*response.length()*/);
 			OutputStream os = t.getResponseBody();
