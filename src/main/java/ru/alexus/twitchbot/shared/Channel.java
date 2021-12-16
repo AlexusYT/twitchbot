@@ -10,6 +10,8 @@ import ru.alexus.twitchbot.Utils;
 import ru.alexus.twitchbot.eventsub.EventSubInfo;
 import ru.alexus.twitchbot.eventsub.TwitchEventSubAPI;
 import ru.alexus.twitchbot.eventsub.UserAccessToken;
+import ru.alexus.twitchbot.eventsub.events.Event;
+import ru.alexus.twitchbot.eventsub.events.RedemptionAdd;
 import ru.alexus.twitchbot.twitch.Channels;
 import ru.alexus.twitchbot.twitch.Twitch;
 import ru.alexus.twitchbot.twitch.commands.CommandInfo;
@@ -126,7 +128,13 @@ public class Channel {
 	public void subscriptionNotification(EventSubInfo subInfo, JSONObject event) {
 		Globals.log.info("Subscription "+subInfo.getType()+" notified for "+channelName);
 		Globals.log.info("Event object: "+event);
+
 		Twitch.sendMsg(subInfo.getType(), this);
+	}
+	public void onRewardRedemption(EventSubInfo subInfo, RedemptionAdd event){
+		User user = this.getUserById(event.getUserId());
+		Globals.log.info("User "+user.getDisplayName()+" redeemed reward "+event.getReward().getTitle()+" in "+channelName);
+
 	}
 
 	public void initRoomState(String str){
@@ -198,7 +206,7 @@ public class Channel {
 		out.close();
 		try {
 			http.getInputStream().close();
-		}catch (Exception e){}
+		}catch (Exception ignored){}
 	}
 
 

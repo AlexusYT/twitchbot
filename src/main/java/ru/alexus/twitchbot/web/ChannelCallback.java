@@ -8,6 +8,8 @@ import org.springframework.lang.NonNull;
 import ru.alexus.twitchbot.Globals;
 import ru.alexus.twitchbot.Utils;
 import ru.alexus.twitchbot.eventsub.EventSubInfo;
+import ru.alexus.twitchbot.eventsub.events.Event;
+import ru.alexus.twitchbot.eventsub.events.RedemptionAdd;
 import ru.alexus.twitchbot.shared.Channel;
 
 import javax.crypto.Mac;
@@ -108,9 +110,13 @@ class ChannelCallback implements HttpHandler {
 			case "notification":
 				if (object.has("subscription") && object.has("event")) {
 					JSONObject subscription = object.getJSONObject("subscription");
-					JSONObject event = object.getJSONObject("event");
+					JSONObject eventObj = object.getJSONObject("event");
 					subInfo.setStatus(subscription.getString("status"));
-					new Thread(() -> channel.subscriptionNotification(subInfo, event), channel.channelName+"/"+subInfo.getType()).start();
+					new Thread(() ->{
+						if(subInfo.getType().equals("channel.channel_points_custom_reward_redemption.add")) channel.onRewardRedemption(subInfo, new RedemptionAdd(eventObj));
+						else
+						channel.subscriptionNotification(subInfo, eventObj);
+					}, channel.channelName+"/"+subInfo.getType()).start();
 					respond(t, 200);
 				}
 				break;
