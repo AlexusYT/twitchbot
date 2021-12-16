@@ -12,7 +12,7 @@ public class Channels {
 	private static final HashMap<String, Channel> channels = new HashMap<>();
 	static {
 		addChannel("alexus_xx", "Привет, чат", "Пока, чат");
-		//addChannel("daxtionoff", "Приветствую всех в чате", "Всем удачи и всем пока! Squid1 Squid2 Squid3 Squid2 Squid4", false);
+		addChannel("daxtionoff", "Приветствую всех в чате", "Всем удачи и всем пока! Squid1 Squid2 Squid3 Squid2 Squid4", false);
 
 		new Thread(Channels::addBuggycoinsToUsers).start();
 	}

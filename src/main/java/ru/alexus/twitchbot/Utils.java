@@ -9,11 +9,13 @@ import ru.alexus.twitchbot.twitch.objects.MsgTags;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
+import java.awt.*;
 import java.io.*;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.*;
+import java.util.List;
 import java.util.regex.Pattern;
 
 public class Utils {
@@ -225,4 +227,11 @@ public class Utils {
 		}
 		return secret.toString();
 	}
+
+	/*public static void openBrowser(){
+
+		if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
+			Desktop.getDesktop().browse(new URI("http://www.example.com"));
+		}
+	}*/
 }

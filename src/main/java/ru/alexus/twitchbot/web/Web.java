@@ -33,9 +33,12 @@ public class Web {
 
 		Globals.log.info("Getting app access token");
 
+//https://id.twitch.tv/oauth2/authorize?response_type=code&client_id=cxxcdpgmikulrcqf6wb899qxgfgrkw&redirect_uri=http://localhost&scope=viewing_activity_read%20channel:read:subscriptions%20channel:moderate%20channel:manage:redemptions&state=c3ab8aa609ea11e793ae92361f002671'
 		while (Globals.appAccessToken==null){
 			try {
 				Globals.appAccessToken = TwitchEventSubAPI.getAppAccessToken("viewing_activity_read", "channel:read:subscriptions", "channel:moderate", "channel:manage:redemptions");
+
+				System.out.println(Globals.appAccessToken);
 			}catch (Exception e) {
 				Globals.log.error("Failed to get app access token", e);
 				try {
@@ -81,6 +84,7 @@ public class Web {
 					}
 				});
 				Globals.log.info("Done");
+
 				Globals.readyToBotStart = true;
 
 			}catch (Exception e){
@@ -114,20 +118,19 @@ public class Web {
 	public static void unregisterChannel(@NonNull HttpContext channelContext){
 		server.removeContext(channelContext);
 	}
-//https://id.twitch.tv/oauth2/authorize?response_type=code&client_id=cxxcdpgmikulrcqf6wb899qxgfgrkw&redirect_uri=http://localhost&scope=viewing_activity_read%20channel:read:subscriptions%20channel:moderate&state=c3ab8aa609ea11e793ae92361f002671'
 
 	static class MyHandler implements HttpHandler {
 		@Override
 		public void handle(HttpExchange t) throws IOException {
-			/*String twitchResponse = t.getRequestURI().toString();
-			String code = twitchResponse.substring(twitchResponse.indexOf("code=")+5, twitchResponse.indexOf("&"));*/
+			String twitchResponse = t.getRequestURI().toString();
+			String code = twitchResponse.substring(twitchResponse.indexOf("code=")+5, twitchResponse.indexOf("&"));
+			try {
+				Globals.userAccessToken = TwitchEventSubAPI.getUserAccessToken(code);
+				System.out.println("User token: " + Globals.userAccessToken);
 
-			//POST https://id.twitch.tv/oauth2/token
-			//    ?client_id=<your client ID>
-			//    &client_secret=<your client secret>
-			//    &code=<authorization code received above>
-			//    &grant_type=authorization_code
-			//    &redirect_uri=<your registered redirect URI>
+			}catch (Exception e){
+				Globals.log.error("Failed to get user token", e);
+			}
 
 			//String response = "This is the response "+code;
 			t.sendResponseHeaders(200, 0/*response.length()*/);

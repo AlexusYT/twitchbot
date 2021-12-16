@@ -5,7 +5,9 @@ import org.springframework.lang.NonNull;
 import ru.alexus.twitchbot.Globals;
 import ru.alexus.twitchbot.Utils;
 
+import java.awt.*;
 import java.io.IOException;
+import java.net.URI;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
@@ -26,6 +28,25 @@ public class TwitchEventSubAPI {
 				"&grant_type=client_credentials" +
 				"&scope="+scopesString));
 		return new AppAccessToken(root);
+	}
+
+	/*
+
+			//POST https://id.twitch.tv/oauth2/token
+			//    ?client_id=<your client ID>
+			//    &client_secret=<your client secret>
+			//    &code=<authorization code received above>
+			//    &grant_type=authorization_code
+			//    &redirect_uri=<your registered redirect URI>
+	 */
+	public static UserAccessToken getUserAccessToken(String code) throws IOException {
+		JSONObject root = new JSONObject(Utils.sendPost("https://id.twitch.tv/oauth2/token", null, "client_id="+ Globals.twitchClientId +
+				"&client_secret="+Globals.twitchSecret +
+				"&code=" + code+
+				"&grant_type=authorization_code" +
+				"&redirect_uri=http://localhost" ));
+		System.out.println(root);
+		return new UserAccessToken(root);
 	}
 	public static EventSubInfo resubscribeToEvent(EventSubInfo oldEvent) throws IOException {
 		return TwitchEventSubAPI.subscribeToEvent(oldEvent.getType(), oldEvent.getVersion(), oldEvent.getCallback(), oldEvent.getCondition());
@@ -51,7 +72,7 @@ public class TwitchEventSubAPI {
 		String respStr = Utils.sendPost("https://api.twitch.tv/helix/eventsub/subscriptions", headers, body.toString());
 		JSONObject response = new JSONObject(respStr);
 		if(response.has("error")){
-			throw new RuntimeException(response.getString("error")+": "+response.getString("message"));
+			throw new RuntimeException(type+": "+response.getString("error")+": "+response.getString("message"));
 		}
 		return new EventSubInfo(response.getJSONArray("data").getJSONObject(0), secret);
 	}

@@ -9,6 +9,7 @@ import ru.alexus.twitchbot.Globals;
 import ru.alexus.twitchbot.Utils;
 import ru.alexus.twitchbot.eventsub.EventSubInfo;
 import ru.alexus.twitchbot.eventsub.TwitchEventSubAPI;
+import ru.alexus.twitchbot.eventsub.UserAccessToken;
 import ru.alexus.twitchbot.twitch.Channels;
 import ru.alexus.twitchbot.twitch.Twitch;
 import ru.alexus.twitchbot.twitch.commands.CommandInfo;
@@ -43,6 +44,7 @@ public class Channel {
 	public boolean enabled, connectedToIRC, connectedToDB;
 	public Connection dbConnection;
 	public HttpContext httpContext;
+	public UserAccessToken broadcasterAccessToken = null;
 	public LinkedList<String> queueToSend;
 	public long firstSend;
 	public int sessionId = -1;
@@ -101,10 +103,13 @@ public class Channel {
 		}
 	}
 
-	public void subscribeEvent(String type, Map<String, String> conditions) throws IOException {
-		Globals.log.info("Subscribing to event "+type+" for "+channelName);
-		subscriptions.put(type, TwitchEventSubAPI.subscribeToEvent(type, "1", channelName+"/callback", conditions));
-
+	public void subscribeEvent(String type, Map<String, String> conditions) {
+		try {
+			Globals.log.info("Subscribing to event "+type+" for "+channelName);
+			subscriptions.put(type, TwitchEventSubAPI.subscribeToEvent(type, "1", channelName+"/callback", conditions));
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 
 	public void subscriptionRevoked(EventSubInfo subInfo){
@@ -172,13 +177,10 @@ public class Channel {
 			}).start();
 		}*/
 
-		try {
 			subscribeEvent("channel.ban", Map.of("broadcaster_user_id", String.valueOf(channelId)));
 			subscribeEvent("channel.unban", Map.of("broadcaster_user_id", String.valueOf(channelId)));
 			subscribeEvent("channel.channel_points_custom_reward_redemption.add", Map.of("broadcaster_user_id", String.valueOf(channelId)));
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+
 
 	}
 	public static void sendPost(String address, HashMap<String, String> headers, String data) throws IOException {

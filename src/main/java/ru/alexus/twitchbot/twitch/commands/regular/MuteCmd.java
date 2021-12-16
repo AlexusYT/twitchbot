@@ -24,10 +24,19 @@ public class MuteCmd extends MainCommandInfo {
 			result.resultMessage = "{.caller}, к твоему сожалению, у "+target.getDisplayName()+" в данный момент стоит запрет на мут";
 			return result;
 		}
-		switch (target.getLevel()){
-			case OWNER: result.resultMessage = "{.caller}, я не могу поднять руку на своего создателя"; return result;
-			case BROADCASTER: result.resultMessage = "{.caller}, не трогать стримера!"; return result;
-			case MODER: result.resultMessage = "{.caller}, модератора замутить не получится. А вот он может :D"; return result;
+		switch (target.getLevel()) {
+			case OWNER -> {
+				result.resultMessage = "{.caller}, я не могу поднять руку на своего создателя";
+				return result;
+			}
+			case BROADCASTER -> {
+				result.resultMessage = "{.caller}, не трогать стримера!";
+				return result;
+			}
+			case MODER -> {
+				result.resultMessage = "{.caller}, модератора замутить не получится. А вот он может :D";
+				return result;
+			}
 		}
 		result = channel.checkSufficientCoins(caller, command);
 		if(!result.sufficientCoins) return result;
@@ -50,16 +59,17 @@ public class MuteCmd extends MainCommandInfo {
 
 	@Override
 	public int getCoinCost(EnumAccessLevel level) {
-		return 5000;
+		if(level==EnumAccessLevel.REGULAR) return 5000;
+		return 2500;
 	}
 
 	@Override
-	public long getUserMaxCalls() {
+	public long getUserMaxCalls(EnumAccessLevel level) {
 		return 5;
 	}
 
 	@Override
-	public long getUserCooldown() {
+	public long getUserCooldown(EnumAccessLevel level) {
 		return 30*60;
 	}
 }

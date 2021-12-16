@@ -30,7 +30,15 @@ public class Twitch extends TwitchHelper {
 			}
 
 		}));
+
+		Globals.log.info("Waiting user auth");
+		/*while (Globals.userAccessToken==null){
+			try {
+				TimeUnit.MILLISECONDS.sleep(50);
+			} catch (InterruptedException ignored) {}
+		}*/
 		Globals.log.info("Waiting webserver to be ready");
+
 		while (!Globals.readyToBotStart){
 			try {
 				TimeUnit.MILLISECONDS.sleep(50);

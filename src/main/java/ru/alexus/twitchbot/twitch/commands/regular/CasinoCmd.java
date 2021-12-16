@@ -4,6 +4,7 @@ import ru.alexus.twitchbot.Utils;
 import ru.alexus.twitchbot.shared.Channel;
 import ru.alexus.twitchbot.twitch.commands.CommandInfo;
 import ru.alexus.twitchbot.twitch.commands.CommandResult;
+import ru.alexus.twitchbot.twitch.commands.EnumAccessLevel;
 import ru.alexus.twitchbot.twitch.commands.MainCommandInfo;
 import ru.alexus.twitchbot.twitch.objects.MsgTags;
 import ru.alexus.twitchbot.twitch.objects.User;
@@ -74,7 +75,10 @@ public class CasinoCmd extends MainCommandInfo {
 		return "попытать удачу в казино. !{alias} <ставка>";
 	}
 
-	public long getGlobalCooldown(){
-		return Utils.random.nextInt(5*60)+2*60;
+	@Override
+	public long getUserCooldown(EnumAccessLevel level) {
+		if(level==EnumAccessLevel.REGULAR) return 20*60;
+		return 5*60;
 	}
+
 }

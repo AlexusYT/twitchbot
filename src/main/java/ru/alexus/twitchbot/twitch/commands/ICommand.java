@@ -26,7 +26,7 @@ public interface ICommand {
 		return 0;
 	}
 
-	default long getUserCooldown(){
+	default long getUserCooldown(EnumAccessLevel level){
 		return 0;
 	}
 
@@ -34,7 +34,7 @@ public interface ICommand {
 		return 0;
 	}
 
-	default long getUserMaxCalls(){
+	default long getUserMaxCalls(EnumAccessLevel level){
 		return 0;
 	}
 }

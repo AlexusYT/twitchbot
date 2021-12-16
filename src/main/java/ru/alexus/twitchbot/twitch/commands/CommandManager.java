@@ -3,16 +3,15 @@ package ru.alexus.twitchbot.twitch.commands;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 import ru.alexus.twitchbot.Globals;
+import ru.alexus.twitchbot.shared.Channel;
 import ru.alexus.twitchbot.twitch.Twitch;
 import ru.alexus.twitchbot.twitch.commands.broadcaster.*;
 import ru.alexus.twitchbot.twitch.commands.owner.*;
 import ru.alexus.twitchbot.twitch.commands.regular.*;
 import ru.alexus.twitchbot.twitch.objects.MsgTags;
+import ru.alexus.twitchbot.twitch.objects.User;
 
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Locale;
-import java.util.Objects;
+import java.util.*;
 
 import static ru.alexus.twitchbot.Utils.*;
 
@@ -52,6 +51,9 @@ public class CommandManager {
 		addCommand(new LeaveCmd());
 		addCommand(new ShutdownCmd());
 		addCommand(new CasinoTestCmd());
+		addCommand(new ResetAllCdCmd());
+		addSubCommandForCommand(muteCmd, new MuteDisableAllCmd());
+		addSubCommandForCommand(muteCmd, new MuteEnableAllCmd());
 
 	}
 	static CommandInfo addCommand(ICommand command){
@@ -63,7 +65,7 @@ public class CommandManager {
 			info.level = command.getAccessLevel();
 			if (info.level == null) info.level = getAccessLevelByPackageName(command);
 			for (String alias : info.aliases) {
-
+				alias = alias.toLowerCase(Locale.ROOT);
 				if(!commands.containsKey(alias))
 					commands.put(alias, info);
 				else{
@@ -90,6 +92,7 @@ public class CommandManager {
 			info.parentCommand = parentCommand;
 			if (parentCommand.subCommands == null) parentCommand.subCommands = new HashMap<>();
 			for (String alias : info.aliases) {
+				alias = alias.toLowerCase(Locale.ROOT);
 				if(!parentCommand.subCommands.containsKey(alias))
 					parentCommand.subCommands.put(alias, info);
 				else{
@@ -151,18 +154,24 @@ public class CommandManager {
 		}
 
 		if(result!=null) {
-			if (result.sufficientCoins||result.coinCost==0) {
+			if(result.coinCost<=0){
+
+				return result.resultMessage;
+			}else if (result.sufficientCoins) {
 				tags.channel.removeCoins(tags.getUser(), result.coinCost);
+
 				cmd.lastExecutionTimeChannelWide.put(tags.getChannelName(), System.currentTimeMillis());
-				cmd.totalExecutionsChannelWide.put(tags.getChannelName(), cmd.totalExecutionsChannelWide.getOrDefault(tags.getChannelName(), 0L)+1);
+				cmd.totalExecutionsChannelWide.put(tags.getChannelName(), cmd.totalExecutionsChannelWide.getOrDefault(tags.getChannelName(), 0L) + 1);
 
 				HashMap<Integer, Long> timeUser = cmd.lastExecutionTimeUserWide.getOrDefault(tags.getChannelName(), new HashMap<>());
 				timeUser.put(tags.getUser().getUserId(), System.currentTimeMillis());
 				cmd.lastExecutionTimeUserWide.put(tags.getChannelName(), timeUser);
 
+
 				HashMap<Integer, Long> execUser = cmd.totalExecutionsUserWide.getOrDefault(tags.getChannelName(), new HashMap<>());
-				execUser.put(tags.getUser().getUserId(), execUser.getOrDefault(tags.getUser().getUserId(), 0L)+1);
+				execUser.put(tags.getUser().getUserId(), execUser.getOrDefault(tags.getUser().getUserId(), 0L) + 1);
 				cmd.totalExecutionsUserWide.put(tags.getChannelName(), execUser);
+
 				return result.resultMessage;
 			} else {
 				return "{.caller}, недостаточно средств. На счету {coins}, а нужно " + result.coinCost;
@@ -172,16 +181,27 @@ public class CommandManager {
 		//Twitch.sendMsg(Utils.replaceVars(messageToSend, tags, cmd), tags.channel, cmd.level.ordinal()>EnumAccessLevel.SUBSCRIBER.ordinal());
 
 	}
+
+	public static void resetAllCd(Channel channel){
+		for (Map.Entry<String, CommandInfo> entry : getCommands().entrySet()) {
+			CommandInfo cmd = entry.getValue();
+			cmd.totalExecutionsChannelWide.remove(channel.channelName);
+			cmd.lastExecutionTimeChannelWide.remove(channel.channelName);
+			cmd.totalExecutionsChannelWide.remove(channel.channelName);
+			cmd.totalExecutionsUserWide.remove(channel.channelName);
+		}
+	}
 	private static boolean canExecute(CommandInfo info, MsgTags tags){
 		try {
+			User user = tags.getUser();
 			long current = System.currentTimeMillis();
 			long globalCd = info.executor.getGlobalCooldown();
-			long userCd = info.executor.getUserCooldown();
+			long userCd = info.executor.getUserCooldown(user.getLevel());
 			long globalMax = info.executor.getGlobalMaxCalls();
-			long userMax = info.executor.getUserMaxCalls();
+			long userMax = info.executor.getUserMaxCalls(user.getLevel());
 
 			String channel = tags.getChannelName();
-			int userId = tags.getUser().getUserId();
+			int userId = user.getUserId();
 
 			long lastExecChannel = info.lastExecutionTimeChannelWide.get(channel);
 			long lastExecUser = info.lastExecutionTimeUserWide.get(channel).get(userId);

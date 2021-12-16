@@ -12,6 +12,7 @@ public class MuteEnableCmd extends SubCommandInfo {
 	@Override
 	public CommandResult execute(CommandInfo command, String text, String[] args, MsgTags tags, Channel channel, User caller, CommandResult result) {
 		caller.setMutableByOthers(true);
+		channel.setUserById(caller.getUserId(), caller);
 		result.resultMessage = "{.caller}, теперь у тебя нет защиты перед временным отстранением другими зрителями";
 		return result;
 	}
