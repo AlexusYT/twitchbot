@@ -71,6 +71,11 @@ public class TwitchHelper {
 				if (elements[0].equals("PING")) {
 					sendToIrc("PONG " + elements[1]);
 					lastPingTime = System.currentTimeMillis();
+					new Thread(() -> {
+						try {
+							if(Utils.isWebHost()) Utils.sendGet(Globals.serverAddress, null, "");
+						} catch (IOException ignored) {}
+					}).start();
 					continue;
 				}else if(elements[0].equals(":tmi.twitch.tv")){
 					if(elements[1].equals("NOTICE")){

@@ -228,6 +228,10 @@ public class Utils {
 		return secret.toString();
 	}
 
+	public static boolean isWebHost(){
+		return System.getenv("PORT")!=null;
+	}
+
 	/*public static void openBrowser(){
 
 		if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
