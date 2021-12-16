@@ -136,9 +136,12 @@ public class Channel {
 		User user = this.getUserById(event.getUserId());
 		Reward reward = event.getReward();
 		Globals.log.info("User "+user.getDisplayName()+" redeemed reward "+reward+" in "+channelName);
-		if(reward.getId().equals("044a7ea1-8e62-476d-b58a-30b215a778cd")){
+		if(reward.getId().equals("044a7ea1-8e62-476d-b58a-30b215a778cd")){//buy coins
 			this.addCoins(user, 200);
 			Twitch.sendMsg(user.getDisplayName()+" купил 200 коинов за "+Utils.pluralizeMessagePoints(reward.getCost())+" канала", this);
+		}else if(reward.getId().equals("188bcad5-82a8-4d19-a184-0c45bd5b0014")){//vip
+			Twitch.sendMsg("/vip "+user.getDisplayName(), this);
+
 		}
 
 	}
