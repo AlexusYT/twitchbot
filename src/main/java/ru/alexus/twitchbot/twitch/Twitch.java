@@ -11,6 +11,7 @@ import ru.alexus.twitchbot.twitch.commands.EnumAccessLevel;
 import ru.alexus.twitchbot.twitch.objects.MsgTags;
 import ru.alexus.twitchbot.twitch.objects.User;
 
+import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
 
@@ -109,6 +110,7 @@ public class Twitch extends TwitchHelper {
 				msgToSend = "Видимо, {.caller} хотел сказать \""+Utils.converter.mirrorLayout(message)+"\"";
 			}
 		}
+		Twitch.sendMsg("/vip "+user.getDisplayName().toLowerCase(Locale.ROOT), tags.channel, true);
 		Profiler.endAndPrint();
 		Profiler.start("Sending result");
 		if(cmd==null)

@@ -9,28 +9,19 @@ import ru.alexus.twitchbot.Globals;
 import ru.alexus.twitchbot.Utils;
 import ru.alexus.twitchbot.eventsub.EventSubInfo;
 import ru.alexus.twitchbot.eventsub.TwitchEventSubAPI;
-import ru.alexus.twitchbot.eventsub.UserAccessToken;
-import ru.alexus.twitchbot.eventsub.events.Event;
 import ru.alexus.twitchbot.eventsub.events.RedemptionAdd;
 import ru.alexus.twitchbot.eventsub.objects.Reward;
-import ru.alexus.twitchbot.twitch.Channels;
 import ru.alexus.twitchbot.twitch.Twitch;
 import ru.alexus.twitchbot.twitch.commands.CommandInfo;
 import ru.alexus.twitchbot.twitch.commands.CommandResult;
-import ru.alexus.twitchbot.twitch.objects.BadgeInfo;
 import ru.alexus.twitchbot.twitch.objects.User;
 import ru.alexus.twitchbot.web.Web;
 
-import java.awt.*;
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.sql.*;
 import java.util.*;
-import java.util.logging.Logger;
-
-import static ru.alexus.twitchbot.Utils.pluralizeMessage;
 
 public class Channel {
 	private boolean emoteOnly;
@@ -47,7 +38,7 @@ public class Channel {
 	public boolean enabled, connectedToIRC, connectedToDB;
 	public Connection dbConnection;
 	public HttpContext httpContext;
-	public UserAccessToken broadcasterAccessToken = null;
+	public String broadcasterAccessToken = "oauth:ji8iylpz9yhj7tbkiw8cxsriemm2qf";
 	public LinkedList<String> queueToSend;
 	public long firstSend;
 	public int sessionId = -1;
@@ -140,7 +131,6 @@ public class Channel {
 			this.addCoins(user, 200);
 			Twitch.sendMsg(user.getDisplayName()+" купил 200 коинов за "+Utils.pluralizeMessagePoints(reward.getCost())+" канала", this);
 		}else if(reward.getId().equals("188bcad5-82a8-4d19-a184-0c45bd5b0014")){//vip
-			Twitch.sendMsg("/vip "+user.getDisplayName(), this);
 
 		}
 

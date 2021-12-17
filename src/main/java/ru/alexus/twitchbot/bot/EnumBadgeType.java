@@ -1,4 +1,4 @@
-package ru.alexus.twitchbot.twitch.objects;
+package ru.alexus.twitchbot.bot;
 
 public enum EnumBadgeType {
 	ADMIN,

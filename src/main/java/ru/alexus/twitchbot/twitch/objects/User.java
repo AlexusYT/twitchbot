@@ -1,5 +1,7 @@
 package ru.alexus.twitchbot.twitch.objects;
 
+import ru.alexus.twitchbot.bot.BadgeInfo;
+import ru.alexus.twitchbot.bot.EnumBadgeType;
 import ru.alexus.twitchbot.shared.Channel;
 import ru.alexus.twitchbot.twitch.commands.EnumAccessLevel;
 

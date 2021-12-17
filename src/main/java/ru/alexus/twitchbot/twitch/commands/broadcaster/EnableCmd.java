@@ -10,6 +10,8 @@ import ru.alexus.twitchbot.twitch.commands.ICommand;
 import ru.alexus.twitchbot.twitch.objects.MsgTags;
 import ru.alexus.twitchbot.twitch.objects.User;
 
+import java.util.Locale;
+
 public class EnableCmd implements ICommand {
 	/*@Override
 	public String execute(CommandInfo alias, String text, MsgTags tags) {
@@ -40,6 +42,12 @@ public class EnableCmd implements ICommand {
 			result.resultMessage = "Управлять сессиями на других каналах может только OWNER";
 			return result;
 		}
+		if(info.enabled){
+			if(args[0].isEmpty()) result.resultMessage = "На этом канале сессия уже запущена";
+			else result.resultMessage = "Сессия уже запущена на канале "+info.channelName;
+			return result;
+		}
+
 		if(info.startSession()){
 			Globals.log.info("Session started for channel "+info.channelName+" with id "+info.sessionId);
 		}else{

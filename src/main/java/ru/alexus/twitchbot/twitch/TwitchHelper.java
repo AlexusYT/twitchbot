@@ -55,8 +55,8 @@ public class TwitchHelper {
 	protected static void run() throws IOException {
 
 
-		sendToIrc("PASS oauth:qnqb5c3by68itlapde0rh463vh5kq2");
-		sendToIrc("NICK TheBuggyBot");
+		sendToIrc("PASS oauth:jmyng9npd09curhdoc78mmvk1rif75");
+		sendToIrc("NICK daxtionoff");
 		sendToIrc("CAP REQ :twitch.tv/membership twitch.tv/commands twitch.tv/tags");
 
 		for (String channel : Channels.getChannels().keySet()) joinChannel(channel);
@@ -85,7 +85,7 @@ public class TwitchHelper {
 						botNameOnServer = elements[2];
 						Globals.log.info("Successfully logged in to Twitch IRC");
 					}
-					continue;
+					//continue;
 				}
 				if(elements[1].equals("JOIN")||elements[1].equals("PART")){
 					String user = elements[0].substring(1, elements[0].indexOf("!"));
