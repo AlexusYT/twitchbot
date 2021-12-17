@@ -16,6 +16,7 @@ public class BadgeInfo {
 			case "subscriber" -> type = EnumBadgeType.SUBSCRIBER;
 			case "staff" -> type = EnumBadgeType.STAFF;
 			case "turbo" -> type = EnumBadgeType.TURBO;
+			case "vip" -> type = EnumBadgeType.VIP;
 		}
 		version = Integer.parseInt(str[1]);
 	}

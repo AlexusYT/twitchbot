@@ -3,12 +3,15 @@ package ru.alexus.twitchbot.bot;
 
 public interface IChannelEvents {
 
-	void onBotChannelJoin(TwitchChannel channel);
-	void onBotChannelLeave(TwitchChannel channel);
-	void onBotChannelJoinFailed(TwitchChannel channel, String reason);
+	default void onBotChannelJoin(TwitchChannel channel){}
+	default void onBotChannelLeave(TwitchChannel channel){}
+	default void onBotChannelJoinFailed(TwitchChannel channel, String reason){}
 
-	void onUserJoin(TwitchChannel channel, String user);
-	void onUserLeft(TwitchChannel channel, String user);
+	default void onUserJoin(TwitchChannel channel, String user){}
+	default void onUserLeft(TwitchChannel channel, String user){}
 
 	void onMessage(TwitchChannel channel, TwitchUser user, TwitchMessage message);
+	default String onSendingMessage(TwitchChannel channel, String message){
+		return message;
+	}
 }

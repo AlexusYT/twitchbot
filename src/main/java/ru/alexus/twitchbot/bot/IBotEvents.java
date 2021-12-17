@@ -6,7 +6,7 @@ public interface IBotEvents {
 	 * @param user - who sent a message
 	 * @param message - message info
 	 */
-	void onWhisper(TwitchUser user, TwitchWhisper message);
+	default void onWhisper(TwitchUser user, TwitchWhisper message){}
 
 	/**
 	 * Called when bot throws any exception. Then bot calls onBotConnectionRetryStarted
@@ -28,5 +28,7 @@ public interface IBotEvents {
 	 * Called when bot trying to reconnect
 	 * @return true if bot should reconnect, false otherwise
 	 */
-	boolean onBotConnectionRetryStarted();
+	default boolean onBotConnectionRetryStarted() {
+		return false;
+	}
 }

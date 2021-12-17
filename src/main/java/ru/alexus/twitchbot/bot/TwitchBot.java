@@ -25,11 +25,13 @@ public class TwitchBot {
 	private final LinkedHashMap<String, TwitchChannel> joinedChannels = new LinkedHashMap<>();
 	private final LinkedHashMap<String, TwitchChannel> pendingChannels = new LinkedHashMap<>();
 	private final LinkedHashMap<String, TwitchChannel> sentChannels = new LinkedHashMap<>();
-	private IBotEvents botEvents;
-	private boolean ignoreViewerBots = true;
 	private boolean botFailure = false;
 	private boolean botStop = false;
 	private boolean botStopped = false;
+
+	private boolean ignoreViewerBots = true;
+	private boolean printOut;
+	private IBotEvents botEvents;
 
 	static {
 		new Thread(()->{
@@ -73,9 +75,8 @@ public class TwitchBot {
 			socket.connect(new InetSocketAddress(serverHostname, serverPort));
 			input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 			output = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
-			System.out.println("Sending auth");
-			sendToIrc("PASS " + botOauth);
-			sendToIrc("NICK " + botUsername);
+			send("PASS " + botOauth);
+			send("NICK " + botUsername);
 			output.flush();
 			String lines = input.readLine();
 			if(lines==null) continue;
@@ -94,13 +95,13 @@ public class TwitchBot {
 			break;
 		}while (true);
 
-		sendToIrc("CAP REQ :twitch.tv/membership twitch.tv/commands twitch.tv/tags");
+		send("CAP REQ :twitch.tv/membership twitch.tv/commands twitch.tv/tags");
 		output.flush();
 		socket.setSoTimeout(2000);
 		boolean capabilitiesSet = false;
 		for (int i = 0; i < 10; i++) {
 			String s = input.readLine();
-			System.out.println(s);
+			if(printOut) System.out.println(s);
 			if(s.contains("CAP * ACK")){
 				capabilitiesSet = true;
 				break;
@@ -116,7 +117,7 @@ public class TwitchBot {
 	}
 
 	public void addChannel(String channelName, IChannelEvents listener){
-		pendingChannels.put(channelName, new TwitchChannel(channelName, listener));
+		pendingChannels.put(channelName, new TwitchChannel(channelName, listener, this));
 	}
 	public void leaveChannel(String channelName){
 
@@ -171,7 +172,7 @@ public class TwitchBot {
 						String[] elements = line.split(" ", 5);
 						if (elements[0].equals("PING")) {
 							lastPingTime = System.currentTimeMillis();
-							sendToIrc("PONG :tmi.twitch.tv");
+							send("PONG :tmi.twitch.tv");
 							output.flush();
 							continue;
 						}
@@ -188,22 +189,23 @@ public class TwitchBot {
 
 									if (channel == null) continue;
 									joinedChannels.put(channelName, channel);
-									channel.listener.onBotChannelJoin(channel);
+									TwitchChannel finalChannel = channel;
+									new Thread(() -> finalChannel.listener.onBotChannelJoin(finalChannel)).start();
 								} else {
 									TwitchChannel channel = joinedChannels.get(channelName);
 									if (channel == null) continue;
-									channel.listener.onUserJoin(channel, user);
+									new Thread(() -> channel.listener.onUserJoin(channel, user)).start();
 								}
 							} else {
 								if (botUsername.equals(user)) {
 									TwitchChannel channel = joinedChannels.remove(channelName);
 									if (channel == null) continue;
 									leftChannels.put(channelName, channel);
-									channel.listener.onBotChannelLeave(channel);
+									new Thread(() -> channel.listener.onBotChannelLeave(channel)).start();
 								} else {
 									TwitchChannel channel = joinedChannels.get(channelName);
 									if (channel == null) continue;
-									channel.listener.onUserLeft(channel, user);
+									new Thread(() -> channel.listener.onUserLeft(channel, user)).start();
 								}
 							}
 							continue;
@@ -225,15 +227,21 @@ public class TwitchBot {
 								TwitchChannel channel = joinedChannels.get(channelName);
 								if (channel == null) continue;
 								TwitchMessage message = new TwitchMessage(elements[0].substring(1), elements[4].substring(1));
-								channel.listener.onMessage(channel, message.getTwitchUser(), message);
+								channel.updateUser(message.getTwitchUser());
+								new Thread(() -> channel.listener.onMessage(channel, message.getTwitchUser(), message)).start();
+
 							}
 							case "WHISPER" -> {
 								if(botEvents==null) continue;
 								TwitchWhisper whisper = new TwitchWhisper(elements[0].substring(1), elements[4].substring(1));
-								botEvents.onWhisper(whisper.getTwitchUser(), whisper);
+								new Thread(() -> botEvents.onWhisper(whisper.getTwitchUser(), whisper)).start();
+
 							}
-							default -> System.out.println(line);
+							default -> {
+								if(printOut) System.out.println(line);
+							}
 						}
+
 					}
 				} catch (Exception e) {
 					Exception exception = e;
@@ -310,9 +318,14 @@ public class TwitchBot {
 		return lastPingTime;
 	}
 
-	private void sendToIrc(String text) throws IOException {
+	private void send(String text) throws IOException {
 		if(output==null) return;
 		output.write(text+"\n");
+	}
+	public void sendToIRC(String text) throws IOException {
+		if(output==null) return;
+		output.write(text+"\n");
+		output.flush();
 	}
 
 	public IBotEvents getBotEvents() {
@@ -329,5 +342,9 @@ public class TwitchBot {
 
 	public boolean isIgnoreViewerBots() {
 		return ignoreViewerBots;
+	}
+
+	public void setPrintOut(boolean printOut) {
+		this.printOut = printOut;
 	}
 }

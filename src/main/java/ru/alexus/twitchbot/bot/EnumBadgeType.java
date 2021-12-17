@@ -8,5 +8,6 @@ public enum EnumBadgeType {
 	MODERATOR,
 	SUBSCRIBER,
 	STAFF,
-	TURBO
+	TURBO,
+	VIP
 }

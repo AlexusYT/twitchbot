@@ -1,16 +1,18 @@
 package ru.alexus.twitchbot.bot;
 
+import org.jetbrains.annotations.NotNull;
 import ru.alexus.twitchbot.shared.Channel;
 
 import java.awt.*;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.Locale;
 
 public class TwitchUser {
 	private final HashMap<EnumBadgeType, BadgeInfo> badges = new HashMap<>();
 	private final LinkedList<Integer> emoteSets = new LinkedList<>();
 	private Color nickColor;
-	private String displayName;
+	private String displayName, login;
 	private String userType, badgeInfo;
 	private int subMonths;
 	private int userId;
@@ -52,6 +54,25 @@ public class TwitchUser {
 			}catch (Exception ignored){}
 		}
 	}
+	public TwitchUser(@NotNull TwitchUser newUser){
+		copyFrom(newUser);
+	}
+
+	public void copyFrom(@NotNull TwitchUser newUser){
+		this.badges.putAll(newUser.badges);
+		this.emoteSets.addAll(newUser.emoteSets);
+		this.nickColor = newUser.nickColor;
+		this.displayName = newUser.displayName;
+		this.userType = newUser.userType;
+		this.badgeInfo = newUser.badgeInfo;
+		this.subMonths = newUser.subMonths;
+		this.userId = newUser.userId;
+		this.turbo = newUser.turbo;
+		this.mod = newUser.mod;
+		this.subscriber = newUser.subscriber;
+		this.login = newUser.login;
+
+	}
 
 	public HashMap<EnumBadgeType, BadgeInfo> getBadges() {
 		return badges;
@@ -70,6 +91,10 @@ public class TwitchUser {
 
 	public String getDisplayName() {
 		return displayName;
+	}
+	public String getLogin(){
+		if(login==null) login = displayName.toLowerCase(Locale.ROOT);
+		return login;
 	}
 
 	public String getUserType() {
@@ -95,9 +120,19 @@ public class TwitchUser {
 	public boolean isSubscriber() {
 		return subscriber;
 	}
+	public boolean isVip() {
+		return badges.containsKey(EnumBadgeType.VIP);
+	}
+	public boolean isBroadcaster() {
+		return badges.containsKey(EnumBadgeType.BROADCASTER);
+	}
 
 	public int getSubMonths() {
 		return subMonths;
+	}
+
+	public LinkedList<Integer> getEmoteSets() {
+		return emoteSets;
 	}
 
 	@Override

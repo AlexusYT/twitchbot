@@ -26,6 +26,7 @@ public class Main {
 	public static void main(String[] args) throws Exception {
 		TwitchBot twitchBot = new TwitchBot("daxtionoff", "oauth:ji8iylpz9yhj7tbkiw8cxsriemm2qf");
 		//TwitchBot twitchBot = new TwitchBot("TheBuggyBot", "oauth:qnqb5c3by68itlapde0rh463vh5kq2");
+		//TwitchBot twitchBot = new TwitchBot("Alexus_XX", "oauth:lkrfplvzsvm5ow7ehayb028onmgt8e");
 		twitchBot.setBotEvents(new IBotEvents() {
 			@Override
 			public void onWhisper(TwitchUser user, TwitchWhisper message) {
@@ -56,7 +57,7 @@ public class Main {
 		});
 		twitchBot.connectToTwitch();
 		twitchBot.startLoop();
-		twitchBot.addChannel("alexus_xx", new IChannelEvents() {
+		twitchBot.addChannel("daxtionoff", new IChannelEvents() {
 			@Override
 			public void onBotChannelJoin(TwitchChannel channel) {
 				System.out.println("Bot joined");
@@ -85,6 +86,27 @@ public class Main {
 			@Override
 			public void onMessage(TwitchChannel channel, TwitchUser user, TwitchMessage message) {
 				System.out.println(user+" sent message to "+channel.getChannelName()+": "+message.getText());
+				long startTime = System.currentTimeMillis();
+				long lastTime = System.currentTimeMillis();
+				int msgs = 0;
+				int i = 0;
+				while (System.currentTimeMillis()-startTime<62000) {
+					channel.sendMessage("test" + i);
+					if (System.currentTimeMillis() - lastTime >= 1000) {
+						System.out.println(msgs);
+						msgs = 0;
+						lastTime = System.currentTimeMillis();
+					}
+
+					msgs++;
+					i++;
+				}
+			}
+
+			@Override
+			public String onSendingMessage(TwitchChannel channel, String message) {
+
+				return message+"!";
 			}
 		});
 
