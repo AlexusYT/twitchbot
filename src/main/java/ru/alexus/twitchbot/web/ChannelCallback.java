@@ -17,6 +17,7 @@ import ru.alexus.twitchbot.twitch.BotChannel;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 class ChannelCallback implements HttpHandler {
@@ -52,7 +53,7 @@ class ChannelCallback implements HttpHandler {
 			__delim = "\n";
 		}
 		Headers requestHeaders = t.getRequestHeaders();
-/*
+
 		Globals.log.info("Method: "+t.getRequestMethod());
 		Globals.log.info("URI: "+t.getRequestURI().toString());
 		StringBuilder headers = new StringBuilder();
@@ -60,7 +61,7 @@ class ChannelCallback implements HttpHandler {
 			headers.append(header.getKey()).append(": ").append(header.getValue().get(0)).append("\n");
 		}
 		Globals.log.info("Headers: "+headers);
-		Globals.log.info("Body: "+clientBody);*/
+		Globals.log.info("Body: "+clientBody);
 
 
 		String messageType = requestHeaders.getFirst("Twitch-Eventsub-Message-Type");
