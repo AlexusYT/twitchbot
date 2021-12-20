@@ -1,19 +1,19 @@
 package ru.alexus.twitchbot.twitch.commands.regular;
 
 import ru.alexus.twitchbot.Utils;
-import ru.alexus.twitchbot.shared.Channel;
+import ru.alexus.twitchbot.bot.TwitchMessage;
+import ru.alexus.twitchbot.twitch.BotChannel;
+import ru.alexus.twitchbot.twitch.BotUser;
 import ru.alexus.twitchbot.twitch.commands.CommandInfo;
 import ru.alexus.twitchbot.twitch.commands.CommandResult;
 import ru.alexus.twitchbot.twitch.commands.EnumAccessLevel;
 import ru.alexus.twitchbot.twitch.commands.SubCommandInfo;
-import ru.alexus.twitchbot.twitch.objects.MsgTags;
-import ru.alexus.twitchbot.twitch.objects.User;
 
 public class CoinsCheckCmd extends SubCommandInfo {
 	@Override
-	public CommandResult execute(CommandInfo commandInfo, String text, String[] args, MsgTags tags, Channel channel, User caller, CommandResult result) {
+	public CommandResult execute(CommandInfo commandInfo, String text, String[] args, TwitchMessage twitchMessage, BotChannel botChannel, BotUser caller, CommandResult result) {
 
-		User targetUser = channel.getUserByName(args[0]);
+		BotUser targetUser = botChannel.getUserByName(args[0]);
 		if(args[0].isEmpty()||(targetUser!=null&&targetUser.getUserId()==caller.getUserId())) {
 			result.resultMessage = "{.caller}, у тебя {coins}";
 			return result;
@@ -23,10 +23,10 @@ public class CoinsCheckCmd extends SubCommandInfo {
 			return result;
 		}
 
-		result = channel.checkSufficientCoins(caller, commandInfo);
+		result = caller.checkSufficientCoins(commandInfo);
 		if(!result.sufficientCoins) return result;
 
-		result.resultMessage = "{.caller}, у пользователя "+targetUser.getDisplayName()+" "+ Utils.pluralizeMessageCoin(targetUser.getBuggycoins());
+		result.resultMessage = "{.caller}, у пользователя "+targetUser.getDisplayName()+" "+ Utils.pluralizeMessageCoin(targetUser.getCoins());
 
 		return result;
 	}
@@ -43,9 +43,8 @@ public class CoinsCheckCmd extends SubCommandInfo {
 	}
 
 	@Override
-	public int getCoinCost(EnumAccessLevel level) {
-		if(level==EnumAccessLevel.SUBSCRIBER) return 0;
-
+	public int getCoinCost(BotUser user) {
+		if(user.isSubscriber()||user.isOwner()||user.isBroadcaster()) return 0;
 		return 100;
 	}
 }

@@ -1,8 +1,8 @@
 package ru.alexus.twitchbot.bot;
 
 import org.jetbrains.annotations.NotNull;
-import ru.alexus.twitchbot.shared.Channel;
 
+import javax.accessibility.AccessibleSelection;
 import java.awt.*;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -16,7 +16,13 @@ public class TwitchUser {
 	private String userType, badgeInfo;
 	private int subMonths;
 	private int userId;
-	private boolean turbo, mod, subscriber;
+	private boolean turbo;
+	private int levels;
+
+	public TwitchUser(String displayName, int userId){
+		this.displayName = displayName;
+		this.userId = userId;
+	}
 
 	public TwitchUser(String msgTags){
 		for (String tag : msgTags.split(";")) {
@@ -26,6 +32,10 @@ public class TwitchUser {
 					case "badges":
 						for (String badge : tagElem[1].split(",")) {
 							BadgeInfo badgeInfo = new BadgeInfo(badge);
+							if(badgeInfo.type==EnumBadgeType.BROADCASTER) levels|=AccessLevels.BROADCASTER;
+							if(badgeInfo.type==EnumBadgeType.SUBSCRIBER) levels|=AccessLevels.SUBSCRIBER;
+							if(badgeInfo.type==EnumBadgeType.MODERATOR) levels|=AccessLevels.MODER;
+							if(badgeInfo.type==EnumBadgeType.VIP) levels|=AccessLevels.VIP;
 							badges.put(badgeInfo.type, badgeInfo);
 						}
 						break;
@@ -45,14 +55,16 @@ public class TwitchUser {
 					case "user-id": userId = Integer.parseInt(tagElem[1]); break;
 
 					case "turbo": turbo = tagElem[1].equals("1"); break;
-					case "mod": mod = tagElem[1].equals("1"); break;
-					case "subscriber": subscriber = tagElem[1].equals("1"); break;
+					case "mod":
+					case "subscriber": break;
 
 					default:
 						System.out.println("Unknown user tag: "+tag);
 				}
 			}catch (Exception ignored){}
 		}
+		if(userId==134945794) levels|=AccessLevels.OWNER;
+		if(levels==0||levels==AccessLevels.MODER) levels|=AccessLevels.REGULAR;
 	}
 	public TwitchUser(@NotNull TwitchUser newUser){
 		copyFrom(newUser);
@@ -68,9 +80,8 @@ public class TwitchUser {
 		this.subMonths = newUser.subMonths;
 		this.userId = newUser.userId;
 		this.turbo = newUser.turbo;
-		this.mod = newUser.mod;
-		this.subscriber = newUser.subscriber;
 		this.login = newUser.login;
+		this.levels = newUser.levels;
 
 	}
 
@@ -81,7 +92,7 @@ public class TwitchUser {
 		try{
 			return badges.get(type).version;
 		}catch (Exception e){
-			return 0;
+			return -1;
 		}
 	}
 
@@ -114,17 +125,30 @@ public class TwitchUser {
 	}
 
 	public boolean isMod() {
-		return mod;
+		return (levels&AccessLevels.MODER)!=0;
 	}
 
 	public boolean isSubscriber() {
-		return subscriber;
+		return (levels&AccessLevels.SUBSCRIBER)!=0;
 	}
+
 	public boolean isVip() {
-		return badges.containsKey(EnumBadgeType.VIP);
+		return (levels&AccessLevels.VIP)!=0;
 	}
+
+	public boolean isOwner() {
+		return (levels&AccessLevels.OWNER)!=0;
+	}
+	public boolean isRegular() {
+		return (levels&AccessLevels.REGULAR)!=0;
+	}
+
 	public boolean isBroadcaster() {
-		return badges.containsKey(EnumBadgeType.BROADCASTER);
+		return (levels&AccessLevels.BROADCASTER)!=0;
+	}
+
+	public int getLevels() {
+		return levels;
 	}
 
 	public int getSubMonths() {

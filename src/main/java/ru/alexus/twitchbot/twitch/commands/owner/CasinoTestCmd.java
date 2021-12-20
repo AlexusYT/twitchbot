@@ -1,16 +1,16 @@
 package ru.alexus.twitchbot.twitch.commands.owner;
 
-import ru.alexus.twitchbot.shared.Channel;
+import ru.alexus.twitchbot.bot.TwitchMessage;
+import ru.alexus.twitchbot.twitch.BotChannel;
+import ru.alexus.twitchbot.twitch.BotUser;
 import ru.alexus.twitchbot.twitch.commands.CommandInfo;
 import ru.alexus.twitchbot.twitch.commands.CommandResult;
 import ru.alexus.twitchbot.twitch.commands.ICommand;
 import ru.alexus.twitchbot.twitch.commands.regular.CasinoCmd;
-import ru.alexus.twitchbot.twitch.objects.MsgTags;
-import ru.alexus.twitchbot.twitch.objects.User;
 
 public class CasinoTestCmd implements ICommand {
 	@Override
-	public CommandResult execute(CommandInfo command, String text, String[] args, MsgTags tags, Channel channel, User caller, CommandResult result) {
+	public CommandResult execute(CommandInfo command, String text, String[] args, TwitchMessage twitchMessage, BotChannel botChannel, BotUser caller, CommandResult result) {
 		int tries = 2;
 		try{
 			tries = Math.max(Math.min(Integer.parseInt(args[0]), 5), 1);
@@ -26,11 +26,11 @@ public class CasinoTestCmd implements ICommand {
 			int x2 = 0;
 			int x50 = 0;
 			for (int i = 0; i < count; i++) {
-				switch (CasinoCmd.runRandom(100)){
-					case -100: x0++; break;
-					case 0: x1++; break;
-					case 200: x2++; break;
-					case 5000: x50++; break;
+				switch (CasinoCmd.runRandom(100)) {
+					case -100 -> x0++;
+					case 0 -> x1++;
+					case 200 -> x2++;
+					case 5000 -> x50++;
 				}
 			}
 			builder.append("TEST #").append(j+1).append(": ");

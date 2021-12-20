@@ -13,6 +13,9 @@ public class TwitchBot {
 	private static final String serverHostname = "irc.twitch.tv";
 	private static final int serverPort = 6667;
 	private static final LinkedList<String> viewerBots = new LinkedList<>();
+	private static final int maxRunningThreads = 20;
+
+
 	private final String botUsername;
 	private final String botOauth;
 
@@ -21,6 +24,7 @@ public class TwitchBot {
 	private Socket socket;
 
 	private long lastPingTime;
+	private int runningThreads;
 	private final LinkedHashMap<String, TwitchChannel> leftChannels = new LinkedHashMap<>();
 	private final LinkedHashMap<String, TwitchChannel> joinedChannels = new LinkedHashMap<>();
 	private final LinkedHashMap<String, TwitchChannel> pendingChannels = new LinkedHashMap<>();
@@ -82,12 +86,12 @@ public class TwitchBot {
 			if(lines==null) continue;
 			if (lines.contains("Login authentication failed")) {
 				IOException exception = new AuthenticationException("Twitch login authentication failed");
-				if(botEvents!=null) botEvents.onBotConnectionFailure(exception);
+				if(botEvents!=null) botEvents.onBotConnectionFailure(this, exception);
 				else throw exception;
 			}
 			if (!lines.contains("Welcome, GLHF!")){
 				IOException exception = new AuthenticationException("Unknown error occurred");
-				if(botEvents!=null) botEvents.onBotConnectionFailure(exception);
+				if(botEvents!=null) botEvents.onBotConnectionFailure(this, exception);
 				else throw exception;
 			}
 			for (int i = 0; i < 6; i++)	input.readLine();
@@ -110,14 +114,15 @@ public class TwitchBot {
 		socket.setSoTimeout(5*60*1000);
 		if(!capabilitiesSet){
 			IOException exception = new IOException("Failed to request capabilities");
-			if(botEvents!=null) botEvents.onBotConnectionFailure(exception);
+			if(botEvents!=null) botEvents.onBotConnectionFailure(this, exception);
 			else throw exception;
 		}
-		if(botEvents!=null) botEvents.onBotConnectionSuccessful();
+		if(botEvents!=null) botEvents.onBotConnectionSuccessful(this);
 	}
 
 	public void addChannel(String channelName, IChannelEvents listener){
-		pendingChannels.put(channelName, new TwitchChannel(channelName, listener, this));
+		if(leftChannels.containsKey(channelName)) joinChannel(channelName);
+		else pendingChannels.put(channelName, new TwitchChannel(channelName, listener, this));
 	}
 	public void leaveChannel(String channelName){
 
@@ -150,7 +155,7 @@ public class TwitchBot {
 						if(sentChannels.containsKey(channelName)){
 							sentChannels.remove(channelName);
 							pendingChannels.remove(channelName);
-							channel.listener.onBotChannelJoinFailed(channel, "twitch took too long to respond");
+							channel.listener.onBotChannelJoinFailed(this, channel, "twitch took too long to respond");
 						}
 
 						output.write("JOIN #" + channelName + "\n");
@@ -190,22 +195,22 @@ public class TwitchBot {
 									if (channel == null) continue;
 									joinedChannels.put(channelName, channel);
 									TwitchChannel finalChannel = channel;
-									new Thread(() -> finalChannel.listener.onBotChannelJoin(finalChannel)).start();
+									new Thread(() -> checkExceedLimit(() -> finalChannel.listener.onBotChannelJoin(this, finalChannel))).start();
 								} else {
 									TwitchChannel channel = joinedChannels.get(channelName);
 									if (channel == null) continue;
-									new Thread(() -> channel.listener.onUserJoin(channel, user)).start();
+									new Thread(() -> checkExceedLimit(() -> channel.listener.onUserJoin(this, channel, user))).start();
 								}
 							} else {
 								if (botUsername.equals(user)) {
 									TwitchChannel channel = joinedChannels.remove(channelName);
 									if (channel == null) continue;
 									leftChannels.put(channelName, channel);
-									new Thread(() -> channel.listener.onBotChannelLeave(channel)).start();
+									new Thread(() -> checkExceedLimit(() -> channel.listener.onBotChannelLeave(this, channel))).start();
 								} else {
 									TwitchChannel channel = joinedChannels.get(channelName);
 									if (channel == null) continue;
-									new Thread(() -> channel.listener.onUserLeft(channel, user)).start();
+									new Thread(() -> checkExceedLimit(() -> channel.listener.onUserLeft(this, channel, user))).start();
 								}
 							}
 							continue;
@@ -227,14 +232,15 @@ public class TwitchBot {
 								TwitchChannel channel = joinedChannels.get(channelName);
 								if (channel == null) continue;
 								TwitchMessage message = new TwitchMessage(elements[0].substring(1), elements[4].substring(1));
-								channel.updateUser(message.getTwitchUser());
-								new Thread(() -> channel.listener.onMessage(channel, message.getTwitchUser(), message)).start();
+								new Thread(() -> {
+									checkExceedLimit(() -> channel.listener.onMessage(this, channel, message.getTwitchUser(), message));
+								}).start();
 
 							}
 							case "WHISPER" -> {
 								if(botEvents==null) continue;
 								TwitchWhisper whisper = new TwitchWhisper(elements[0].substring(1), elements[4].substring(1));
-								new Thread(() -> botEvents.onWhisper(whisper.getTwitchUser(), whisper)).start();
+								new Thread(() -> checkExceedLimit(() -> botEvents.onWhisper(this, whisper.getTwitchUser(), whisper))).start();
 
 							}
 							default -> {
@@ -252,7 +258,7 @@ public class TwitchBot {
 							if(exception instanceof SocketTimeoutException){
 								exception = new RuntimeException("Twitch server is not responding");
 							}
-							botEvents.onBotConnectionFailure(exception);
+							botEvents.onBotConnectionFailure(this, exception);
 						}
 					}
 				}
@@ -261,7 +267,7 @@ public class TwitchBot {
 					int tries = 0;
 					do{
 						try {
-							if (botEvents != null&&!botEvents.onBotConnectionRetryStarted()){
+							if (botEvents != null&&!botEvents.onBotConnectionRetryStarted(this)){
 								botStop = true;
 								break;
 							}
@@ -287,7 +293,7 @@ public class TwitchBot {
 				}
 			}
 			botStopped = true;
-			if(botEvents!=null) botEvents.onBotStopped();
+			if(botEvents!=null) botEvents.onBotStopped(this);
 		}).start();
 
 	}
@@ -301,6 +307,7 @@ public class TwitchBot {
 
 	public void stopBot(){
 		try {
+			if(botEvents!=null) botEvents.onBotStopping(this);
 			botStop = true;
 			socket.close();
 			pendingChannels.clear();
@@ -322,12 +329,30 @@ public class TwitchBot {
 		if(output==null) return;
 		output.write(text+"\n");
 	}
+
 	public void sendToIRC(String text) throws IOException {
 		if(output==null) return;
 		output.write(text+"\n");
 		output.flush();
 	}
 
+	public void sendWhisper(String user, String message){
+		try {
+			if(botEvents!=null) message=botEvents.onSendingWhisper(this, message);
+			sendToIRC("PRIVMSG "+botUsername+" :/w " + user + " " + message);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	private void checkExceedLimit(Runnable runnable){
+		if(runningThreads<maxRunningThreads) {
+			runningThreads++;
+			runnable.run();
+			runningThreads--;
+		} else
+			System.err.println("Event skipped because of exceeding limit of running threads");
+	}
 	public IBotEvents getBotEvents() {
 		return botEvents;
 	}
@@ -346,5 +371,9 @@ public class TwitchBot {
 
 	public void setPrintOut(boolean printOut) {
 		this.printOut = printOut;
+	}
+
+	public String getBotUsername() {
+		return botUsername;
 	}
 }

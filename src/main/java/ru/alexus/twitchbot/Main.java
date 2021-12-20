@@ -17,103 +17,64 @@
 package ru.alexus.twitchbot;
 
 import ru.alexus.twitchbot.bot.*;
+import ru.alexus.twitchbot.twitch.Database;
+import ru.alexus.twitchbot.twitch.Twitch;
+import ru.alexus.twitchbot.web.Web;
 
+import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 
 public class Main {
 
 	public static void main(String[] args) throws Exception {
-		TwitchBot twitchBot = new TwitchBot("daxtionoff", "oauth:ji8iylpz9yhj7tbkiw8cxsriemm2qf");
-		//TwitchBot twitchBot = new TwitchBot("TheBuggyBot", "oauth:qnqb5c3by68itlapde0rh463vh5kq2");
+
+		Utils.init();
+
+		final Database botDatabase = new Database(Globals.databaseUrl, "botDB", Globals.databaseLogin, Globals.databasePass);
+
+		Globals.log.info("Connecting to bot database");
+		int tries = 0;
+		do{
+			try {
+				botDatabase.connect();
+				break;
+			}catch (Exception e){
+				Globals.log.error("Failed to connect to database", e);
+			}
+			tries++;
+			try {
+				TimeUnit.SECONDS.sleep((long) Math.pow(2, tries));
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}while (true);
+		Globals.log.info("Connection successful");
+
+		TwitchBot twitchBot = new TwitchBot("TheBuggyBot", "oauth:qnqb5c3by68itlapde0rh463vh5kq2");
 		//TwitchBot twitchBot = new TwitchBot("Alexus_XX", "oauth:lkrfplvzsvm5ow7ehayb028onmgt8e");
-		twitchBot.setBotEvents(new IBotEvents() {
-			@Override
-			public void onWhisper(TwitchUser user, TwitchWhisper message) {
-				System.out.println(user.getDisplayName()+" whispered: "+message.getText());
-			}
-
-			@Override
-			public void onBotConnectionFailure(Throwable throwable) {
-				System.out.println("Bot failure: "+throwable);
-			}
-
-			@Override
-			public void onBotConnectionSuccessful() {
-				System.out.println("Bot connected");
-			}
-
-			@Override
-			public void onBotStopped() {
-				System.out.println("Bot stopped");
-			}
-
-			@Override
-			public boolean onBotConnectionRetryStarted() {
-				System.out.println("Reconnecting");
-				return true;
-			}
-
-		});
+		//TwitchBot twitchBot = new TwitchBot("daxtionoff", "oauth:ji8iylpz9yhj7tbkiw8cxsriemm2qf");
+		Twitch twitch = new Twitch(botDatabase);
+		twitchBot.setBotEvents(twitch);
+		Runtime.getRuntime().addShutdownHook(new Thread(twitchBot::stopBot));
 		twitchBot.connectToTwitch();
 		twitchBot.startLoop();
-		twitchBot.addChannel("daxtionoff", new IChannelEvents() {
-			@Override
-			public void onBotChannelJoin(TwitchChannel channel) {
-				System.out.println("Bot joined");
+		new Thread(() -> {
+			while (true) {
+				try {
+					TimeUnit.MINUTES.sleep(20);
+					if (Utils.isWebHost()) Utils.sendGet(Globals.serverAddress, null, "");
+				} catch (IOException | InterruptedException ignored) {}
 			}
+		}, "Web host wake").start();
 
-			@Override
-			public void onBotChannelLeave(TwitchChannel channel) {
-				System.out.println("Bot left");
-			}
-
-			@Override
-			public void onBotChannelJoinFailed(TwitchChannel channel, String reason) {
-				System.out.println("Failed to join. Reason: "+reason);
-			}
-
-			@Override
-			public void onUserJoin(TwitchChannel channel, String user) {
-				System.out.println(user+" joined "+channel.getChannelName());
-			}
-
-			@Override
-			public void onUserLeft(TwitchChannel channel, String user) {
-				System.out.println(user+" left "+channel.getChannelName());
-			}
-
-			@Override
-			public void onMessage(TwitchChannel channel, TwitchUser user, TwitchMessage message) {
-				System.out.println(user+" sent message to "+channel.getChannelName()+": "+message.getText());
-				long startTime = System.currentTimeMillis();
-				long lastTime = System.currentTimeMillis();
-				int msgs = 0;
-				int i = 0;
-				while (System.currentTimeMillis()-startTime<62000) {
-					channel.sendMessage("test" + i);
-					if (System.currentTimeMillis() - lastTime >= 1000) {
-						System.out.println(msgs);
-						msgs = 0;
-						lastTime = System.currentTimeMillis();
-					}
-
-					msgs++;
-					i++;
-				}
-			}
-
-			@Override
-			public String onSendingMessage(TwitchChannel channel, String message) {
-
-				return message+"!";
-			}
-		});
-
-/*
-		Thread twitchThread = new Thread(Twitch::startBot);
-		twitchThread.start();
-		Thread webThread = new Thread(Web::startWeb);
+		String port = System.getenv("PORT");
+		if(port==null) port = "80";
+		Web web = new Web(Integer.parseInt(port), twitch, botDatabase);
+		web.start();
+		web.unsubscribeAllEvents();
+		web.subscribeChannelsEvents();
+		/*Thread webThread = new Thread(Web::startWeb);
 		webThread.start();*/
 	}
 

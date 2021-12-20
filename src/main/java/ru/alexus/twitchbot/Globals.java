@@ -14,7 +14,9 @@ import ru.alexus.twitchbot.twitch.Twitch;
 
 public class Globals {
 
-	public static boolean shutdownTwitchBot = false;
+	public static final String databaseUrl = "jdbc:mysql://slymcdb.cusovblh0zzb.eu-west-2.rds.amazonaws.com";
+	public static final String databaseLogin = "admin";
+	public static final String databasePass = "nBeXaR8bLByWwyF";
 	public static Logger log;
 	public static String twitchClientId = "cxxcdpgmikulrcqf6wb899qxgfgrkw";
 	public static String twitchSecret = "9fubbi0620woz6c65kf1cag7u2c4ao";

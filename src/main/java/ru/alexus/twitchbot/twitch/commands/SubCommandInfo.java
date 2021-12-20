@@ -1,8 +1,8 @@
 package ru.alexus.twitchbot.twitch.commands;
 
-import ru.alexus.twitchbot.shared.Channel;
-import ru.alexus.twitchbot.twitch.objects.MsgTags;
-import ru.alexus.twitchbot.twitch.objects.User;
+import ru.alexus.twitchbot.bot.TwitchMessage;
+import ru.alexus.twitchbot.twitch.BotChannel;
+import ru.alexus.twitchbot.twitch.BotUser;
 
 public abstract class SubCommandInfo implements ICommand{
 
@@ -20,7 +20,7 @@ public abstract class SubCommandInfo implements ICommand{
 	}*/
 
 	@Override
-	public CommandResult execute(CommandInfo command, String text, String[] args, MsgTags tags, Channel channel, User caller, CommandResult result) {
+	public CommandResult execute(CommandInfo command, String text, String[] args, TwitchMessage twitchMessage, BotChannel botChannel, BotUser caller, CommandResult result) {
 		result.resultMessage = "{.caller}, ";
 		if(command.description==null) {
 			result.resultMessage += "описание этой команды неизвестно";

@@ -1,21 +1,22 @@
 package ru.alexus.twitchbot.twitch.commands.regular;
 
 import ru.alexus.twitchbot.Utils;
-import ru.alexus.twitchbot.shared.Channel;
+import ru.alexus.twitchbot.bot.AccessLevels;
+import ru.alexus.twitchbot.bot.TwitchMessage;
+import ru.alexus.twitchbot.twitch.BotChannel;
+import ru.alexus.twitchbot.twitch.BotUser;
 import ru.alexus.twitchbot.twitch.commands.CommandInfo;
 import ru.alexus.twitchbot.twitch.commands.CommandManager;
 import ru.alexus.twitchbot.twitch.commands.CommandResult;
 import ru.alexus.twitchbot.twitch.commands.ICommand;
 import ru.alexus.twitchbot.twitch.commands.EnumAccessLevel;
-import ru.alexus.twitchbot.twitch.objects.MsgTags;
-import ru.alexus.twitchbot.twitch.objects.User;
 
 import java.util.LinkedList;
 import java.util.Map;
 
 public class HelpCmd implements ICommand {
 	@Override
-	public CommandResult execute(CommandInfo command, String text, String[] args, MsgTags tags, Channel channel, User caller, CommandResult result) {
+	public CommandResult execute(CommandInfo command, String text, String[] args, TwitchMessage twitchMessage, BotChannel botChannel, BotUser caller, CommandResult result) {
 		if(args[0].isEmpty()) {
 			StringBuilder commands = new StringBuilder();
 			String delim = "";
@@ -25,7 +26,7 @@ public class HelpCmd implements ICommand {
 				String commandKey = commandsEntry.getKey();
 				CommandInfo commandInfo = commandsEntry.getValue();
 				if(!Utils.isRussian(commandKey)) continue;
-				if(commandInfo.level.ordinal()> EnumAccessLevel.SUBSCRIBER.ordinal()) continue;
+				if(commandInfo.levels > AccessLevels.SUBSCRIBER) continue;
 				if(prepared.contains(commandInfo.executor)) continue;
 				prepared.add(commandInfo.executor);
 				commands.append(delim);
@@ -38,15 +39,15 @@ public class HelpCmd implements ICommand {
 
 		if(args.length>1){
 			CommandInfo mainCommand = CommandManager.getCommand(args[0]);
-			if(mainCommand==null || mainCommand.description==null || mainCommand.description.isEmpty() || mainCommand.subCommands == null||
-					mainCommand.level.ordinal()>EnumAccessLevel.SUBSCRIBER.ordinal()) {
+			if(mainCommand==null || mainCommand.description==null || mainCommand.description.isEmpty() || mainCommand.subCommands == null ||
+					mainCommand.levels > AccessLevels.SUBSCRIBER) {
 				result.resultMessage = "{.caller}, я не могу помочь тебе с этой командой";
 				return result;
 			}
 
 			CommandInfo subCommand = CommandManager.getCommand(args[1], mainCommand.subCommands);
 			if(subCommand==null || subCommand.description==null || subCommand.description.isEmpty() ||
-					subCommand.level.ordinal()>EnumAccessLevel.SUBSCRIBER.ordinal()) {
+					subCommand.levels > AccessLevels.SUBSCRIBER) {
 				result.resultMessage = "{.caller}, я не могу помочь тебе с этой командой";
 				return result;
 			}
@@ -61,7 +62,7 @@ public class HelpCmd implements ICommand {
 			return result;
 		}
 		CommandInfo info = CommandManager.getCommand(args[0]);
-		if(info==null || info.description==null || info.description.isEmpty() || info.level.ordinal()>EnumAccessLevel.SUBSCRIBER.ordinal()) {
+		if(info==null || info.description==null || info.description.isEmpty() || info.levels>AccessLevels.SUBSCRIBER) {
 			result.resultMessage = "{.caller}, я не могу помочь тебе с этой командой";
 			return result;
 		}
@@ -86,4 +87,5 @@ public class HelpCmd implements ICommand {
 	public String[] getAliases() {
 		return new String[]{"помощь", "команды", "help", "commands"};
 	}
+
 }

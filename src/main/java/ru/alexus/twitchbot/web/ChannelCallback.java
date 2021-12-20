@@ -10,27 +10,25 @@ import ru.alexus.twitchbot.Utils;
 import ru.alexus.twitchbot.eventsub.EventSubInfo;
 import ru.alexus.twitchbot.eventsub.events.Event;
 import ru.alexus.twitchbot.eventsub.events.RedemptionAdd;
-import ru.alexus.twitchbot.shared.Channel;
+import ru.alexus.twitchbot.eventsub.events.StreamOnline;
+import ru.alexus.twitchbot.shared.ChannelOld;
+import ru.alexus.twitchbot.twitch.BotChannel;
 
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
 import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 
 class ChannelCallback implements HttpHandler {
-	Channel channel;
+	private final BotChannel channel;
 	LinkedHashMap<String, Long> ids = new LinkedHashMap<>();
 	long packets = 0;
 	long last = System.currentTimeMillis();
+	private final IEventSub sub;
 
-
-	public ChannelCallback(Channel channel){
+	public ChannelCallback(BotChannel channel){
 		this.channel = channel;
+		this.sub = channel;
 
 	}
 
@@ -77,22 +75,22 @@ class ChannelCallback implements HttpHandler {
 			return;
 		}
 
-		EventSubInfo subInfo = channel.subscriptions.get(subscriptionType);
+		EventSubInfo subInfo = channel.getEvent(subscriptionType);
 
 		if(subInfo==null) {
-			Globals.log.error("Event not found "+subscriptionType+" for channel "+channel.channelName);
+			Globals.log.error("Event not found "+subscriptionType+" for channel "+channel.getName());
 			respond(t, 400);
 			return;
 		}
 
 		if(!messageHMAC.equals("sha256="+Utils.hmacSha256(messageId+messageTimestamp+clientBody, subInfo.getSecret()))){
-			//Globals.log.error("HMAC mismatch for event "+subscriptionType+" for channel "+channel.channelName);
+			Globals.log.error("HMAC mismatch for event "+subscriptionType+" for channel "+channel.getName());
 			respond(t, 400);
 			return;
 		}
 
 		if(ids.get(messageId)!=null){
-			//Globals.log.error("Notification duplicate detected");
+			Globals.log.error("Notification duplicate detected");
 			respond(t, 200);
 			return;
 		}
@@ -113,10 +111,14 @@ class ChannelCallback implements HttpHandler {
 					JSONObject eventObj = object.getJSONObject("event");
 					subInfo.setStatus(subscription.getString("status"));
 					new Thread(() ->{
-						if(subInfo.getType().equals("channel.channel_points_custom_reward_redemption.add")) channel.onRewardRedemption(subInfo, new RedemptionAdd(eventObj));
-						else
-						channel.subscriptionNotification(subInfo, eventObj);
-					}, channel.channelName+"/"+subInfo.getType()).start();
+						switch (subInfo.getType()) {
+							case "channel.channel_points_custom_reward_redemption.add" -> channel.onRewardRedemption(subInfo, new RedemptionAdd(eventObj));
+							case "stream.online" -> channel.onStreamOnline(subInfo, new StreamOnline(eventObj));
+							case "stream.offline" -> channel.onStreamOffline(subInfo, new Event(eventObj));
+						}
+						//else
+						//channel.subscriptionNotification(subInfo, eventObj);
+					}, channel.getName()+"/"+subInfo.getType()).start();
 					respond(t, 200);
 				}
 				break;
@@ -124,7 +126,7 @@ class ChannelCallback implements HttpHandler {
 				if (object.has("subscription")) {
 					JSONObject subscription = object.getJSONObject("subscription");
 					subInfo.setStatus(subscription.getString("status"));
-					new Thread(() -> channel.subscriptionRevoked(subInfo), channel.channelName+"/"+subInfo.getType()).start();
+					new Thread(() -> channel.subscriptionRevoked(subInfo), channel.getName()+"/"+subInfo.getType()).start();
 					respond(t, 200);
 				}
 				break;
@@ -133,7 +135,7 @@ class ChannelCallback implements HttpHandler {
 
 				break;
 		}
-		channel.subscriptions.put(subscriptionType, subInfo);
+		//channel.subscriptions.put(subscriptionType, subInfo);
 		ids.put(messageId, System.currentTimeMillis());
 		if(System.currentTimeMillis()-lastTime>5){
 
@@ -166,5 +168,7 @@ class ChannelCallback implements HttpHandler {
 		}catch (Exception e){
 			Globals.log.error("Error occurred", e);
 		}
+
+
 	}
 }

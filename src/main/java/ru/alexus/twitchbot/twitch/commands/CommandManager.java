@@ -1,15 +1,14 @@
 package ru.alexus.twitchbot.twitch.commands;
 
-import org.springframework.lang.NonNull;
-import org.springframework.lang.Nullable;
 import ru.alexus.twitchbot.Globals;
-import ru.alexus.twitchbot.shared.Channel;
-import ru.alexus.twitchbot.twitch.Twitch;
+import ru.alexus.twitchbot.bot.AccessLevels;
+import ru.alexus.twitchbot.bot.TwitchMessage;
+import ru.alexus.twitchbot.twitch.BotChannel;
+import ru.alexus.twitchbot.twitch.BotUser;
 import ru.alexus.twitchbot.twitch.commands.broadcaster.*;
+import ru.alexus.twitchbot.twitch.commands.moder.DeathCmd;
 import ru.alexus.twitchbot.twitch.commands.owner.*;
 import ru.alexus.twitchbot.twitch.commands.regular.*;
-import ru.alexus.twitchbot.twitch.objects.MsgTags;
-import ru.alexus.twitchbot.twitch.objects.User;
 
 import java.util.*;
 
@@ -20,8 +19,7 @@ public class CommandManager {
 
 	static LinkedHashMap<String, CommandInfo> commands = new LinkedHashMap<>();
 
-
-	static {
+	public static void registerAll(){
 		/*REGULAR*/
 		addCommand(new HelloCmd());
 		addCommand(new HelpCmd());
@@ -32,17 +30,20 @@ public class CommandManager {
 		CommandInfo dictionaryCmd = addCommand(new DictionaryCmd());
 		addSubCommandForCommand(dictionaryCmd, new DictionaryAddCmd());
 
-		CommandInfo buggycoinsCmd = addCommand(new CoinsCmd());
-		addSubCommandForCommand(buggycoinsCmd, new CoinsTransferCmd());
-		addSubCommandForCommand(buggycoinsCmd, new CoinsTopCmd());
-		addSubCommandForCommand(buggycoinsCmd, new CoinsCheckCmd());
+		CommandInfo coinsCmd = addCommand(new CoinsCmd());
+		addSubCommandForCommand(coinsCmd, new CoinsTransferCmd());
+		addSubCommandForCommand(coinsCmd, new CoinsTopCmd());
+		addSubCommandForCommand(coinsCmd, new CoinsCheckCmd());
 
 		CommandInfo muteCmd = addCommand(new MuteCmd());
 		addSubCommandForCommand(muteCmd, new MuteDisableCmd());
 		addSubCommandForCommand(muteCmd, new MuteEnableCmd());
+		/*MODERS*/
+		addCommand(new DeathCmd());
+
 
 		/*BROADCASTER*/
-		addSubCommandForCommand(buggycoinsCmd, new CoinsGiveCmd());
+		addSubCommandForCommand(coinsCmd, new CoinsGiveCmd());
 		addCommand(new EnableCmd());
 		addCommand(new DisableCmd());
 
@@ -52,9 +53,13 @@ public class CommandManager {
 		addCommand(new ShutdownCmd());
 		addCommand(new CasinoTestCmd());
 		addCommand(new ResetAllCdCmd());
+		addCommand(new ReloadCmd());
 		addSubCommandForCommand(muteCmd, new MuteDisableAllCmd());
 		addSubCommandForCommand(muteCmd, new MuteEnableAllCmd());
 
+	}
+	public static void unregisterAll(){
+		commands.clear();
 	}
 	static CommandInfo addCommand(ICommand command){
 		try {
@@ -62,8 +67,8 @@ public class CommandManager {
 			info.aliases = command.getAliases();
 			info.description = command.getDescription();
 			info.executor = command;
-			info.level = command.getAccessLevel();
-			if (info.level == null) info.level = getAccessLevelByPackageName(command);
+			info.levels = command.getAccessLevel();
+			if (info.levels == 0) info.levels = getAccessLevelByPackageName(command);
 			for (String alias : info.aliases) {
 				alias = alias.toLowerCase(Locale.ROOT);
 				if(!commands.containsKey(alias))
@@ -87,8 +92,8 @@ public class CommandManager {
 			info.aliases = command.getAliases();
 			info.description = command.getDescription();
 			info.executor = command;
-			info.level = command.getAccessLevel();
-			if(info.level == null) info.level = getAccessLevelByPackageName(command);
+			info.levels = command.getAccessLevel();
+			if(info.levels == 0) info.levels = getAccessLevelByPackageName(command);
 			info.parentCommand = parentCommand;
 			if (parentCommand.subCommands == null) parentCommand.subCommands = new HashMap<>();
 			for (String alias : info.aliases) {
@@ -105,10 +110,10 @@ public class CommandManager {
 			Globals.log.error("Failed to register command", e);
 		}
 	}
-	@Nullable
-	public static CommandInfo extractCommand(String text, @NonNull MsgTags tags){
 
-		if(tags.isReplying()){
+	public static String executeCommand(TwitchMessage twitchMessage, BotChannel channel, BotUser user){
+		String text = twitchMessage.getText();
+		if(twitchMessage.isReplying()){
 			text = text.substring(text.indexOf(" ")+1);
 		}
 		if(!text.startsWith("!")) return null;
@@ -117,7 +122,7 @@ public class CommandManager {
 
 		CommandInfo cmd = getCommand(alias);
 		if(cmd==null) return null;
-		if(!tags.channel.enabled&&cmd.executor != Objects.requireNonNull(getCommand("enable")).executor) return null;
+		if(!channel.isEnabled()&&cmd.executor != Objects.requireNonNull(getCommand("enable")).executor) return null;
 		if(command.length>1&&cmd.subCommands!=null) {
 			String subCmdAlias = command[1].toLowerCase(Locale.ROOT);
 			CommandInfo temp = getCommand(subCmdAlias, cmd.subCommands);
@@ -125,108 +130,92 @@ public class CommandManager {
 				cmd = temp;
 			}
 		}
-		return cmd;
-	}
-	public static String executeCommand(String text, MsgTags tags, @Nullable CommandInfo cmd){
-		if(cmd==null || !canExecute(cmd, tags)) return null;
-		if(cmd.level.ordinal()>tags.getUser().getLevel().ordinal()) {
-			String warning;
-			switch (cmd.level){
-				case SUBSCRIBER: warning = "{.caller}, ты не сабскрайбер. Подпишись на канал."; break;
-				case MODER: warning = "{.caller}, только модераторы могут использовать эту команду!"; break;
-				case BROADCASTER: warning = "{.caller}, вот когда станешь стримером, тогда и сможешь использовать эту команду!"; break;
-				case OWNER: warning = "{.caller}, ты не имеешь права мне указывать!"; break;
-				default: warning = "Хм... Ты, {.caller}, какое-то бесправное существо... Жаль тебя";
-			}
-			return warning;
+
+		if(!canExecute(cmd, channel, user)) return null;
+		if(cmd.levels>user.getTwitchUser().getLevels()){
+			if(cmd.levels<=AccessLevels.SUBSCRIBER) return "{.caller}, ты не сабскрайбер! Подпишись на канал для начала";
+			if(cmd.levels<=AccessLevels.MODER) return "{.caller}, только модераторы могут использовать эту команду!";
+			if(cmd.levels<=AccessLevels.BROADCASTER) return "{.caller}, вот когда станешь стримером, тогда и сможешь использовать эту команду!";
+			if(cmd.levels<=AccessLevels.OWNER) return "{.caller}, ты не имеешь права мне указывать!";
+			return "Хм... Ты, {.caller}, какое-то бесправное существо... Жаль тебя";
 		}
-		String[] command = text.split(" ", 3);
 
 		CommandResult result;
 		if(cmd.parentCommand!=null) {
 			String textCmd =  command.length > 2 ? command[2] : "";
-			result = cmd.executor.execute(cmd, textCmd, textCmd.split(" "), tags, tags.channel, tags.getUser(), new CommandResult());
+			result = cmd.executor.execute(cmd, textCmd, textCmd.split(" "), twitchMessage, channel, user, new CommandResult());
 		}else {
 			String args = "";
 			if(command.length == 2) args = command[1];
 			else if(command.length == 3) args = command[1]+" "+command[2];
-			result = cmd.executor.execute(cmd, args, args.split(" "), tags, tags.channel, tags.getUser(), new CommandResult());
+			result = cmd.executor.execute(cmd, args, args.split(" "), twitchMessage, channel, user, new CommandResult());
 		}
-
+		String ret = null;
 		if(result!=null) {
 			if(result.coinCost<=0){
-
-				return result.resultMessage;
+				ret = result.resultMessage;
 			}else if (result.sufficientCoins) {
-				tags.channel.removeCoins(tags.getUser(), result.coinCost);
+				Globals.log.info("Removed "+result.coinCost+" coins from "+user);
+				user.removeCoins(result.coinCost);
+				channel.commandsLastExecute.put(cmd, System.currentTimeMillis());
+				channel.commandsExecuteCount.put(cmd, channel.commandsExecuteCount.getOrDefault(cmd, 0)+1);
+				user.commandsLastExecute.put(cmd, System.currentTimeMillis());
+				user.commandsExecuteCount.put(cmd, user.commandsExecuteCount.getOrDefault(cmd, 0)+1);
 
-				cmd.lastExecutionTimeChannelWide.put(tags.getChannelName(), System.currentTimeMillis());
-				cmd.totalExecutionsChannelWide.put(tags.getChannelName(), cmd.totalExecutionsChannelWide.getOrDefault(tags.getChannelName(), 0L) + 1);
-
-				HashMap<Integer, Long> timeUser = cmd.lastExecutionTimeUserWide.getOrDefault(tags.getChannelName(), new HashMap<>());
-				timeUser.put(tags.getUser().getUserId(), System.currentTimeMillis());
-				cmd.lastExecutionTimeUserWide.put(tags.getChannelName(), timeUser);
-
-
-				HashMap<Integer, Long> execUser = cmd.totalExecutionsUserWide.getOrDefault(tags.getChannelName(), new HashMap<>());
-				execUser.put(tags.getUser().getUserId(), execUser.getOrDefault(tags.getUser().getUserId(), 0L) + 1);
-				cmd.totalExecutionsUserWide.put(tags.getChannelName(), execUser);
-
-				return result.resultMessage;
+				ret = result.resultMessage;
 			} else {
-				return "{.caller}, недостаточно средств. На счету {coins}, а нужно " + result.coinCost;
+				ret = "{.caller}, недостаточно средств. На счету {coins}, а нужно " + result.coinCost;
 			}
 		}
-		return null;
-		//Twitch.sendMsg(Utils.replaceVars(messageToSend, tags, cmd), tags.channel, cmd.level.ordinal()>EnumAccessLevel.SUBSCRIBER.ordinal());
 
-	}
-
-	public static void resetAllCd(Channel channel){
-		for (Map.Entry<String, CommandInfo> entry : getCommands().entrySet()) {
-			CommandInfo cmd = entry.getValue();
-			cmd.totalExecutionsChannelWide.remove(channel.channelName);
-			cmd.lastExecutionTimeChannelWide.remove(channel.channelName);
-			cmd.totalExecutionsChannelWide.remove(channel.channelName);
-			cmd.totalExecutionsUserWide.remove(channel.channelName);
+		CommandInfo mainCommand = cmd.parentCommand != null ? cmd.parentCommand : cmd;
+		CommandInfo subCommand = null;
+		if(cmd.parentCommand!=null&&cmd.subCommands==null){
+			subCommand = cmd;
 		}
+
+		ret = replaceVar("alias", mainCommand.calledAlias, ret);
+		if(subCommand!=null)
+			ret = replaceVar("subalias", subCommand.calledAlias, ret);
+
+		return ret;
 	}
-	private static boolean canExecute(CommandInfo info, MsgTags tags){
-		try {
-			User user = tags.getUser();
-			long current = System.currentTimeMillis();
-			long globalCd = info.executor.getGlobalCooldown();
-			long userCd = info.executor.getUserCooldown(user.getLevel());
-			long globalMax = info.executor.getGlobalMaxCalls();
-			long userMax = info.executor.getUserMaxCalls(user.getLevel());
 
-			String channel = tags.getChannelName();
-			int userId = user.getUserId();
 
-			long lastExecChannel = info.lastExecutionTimeChannelWide.get(channel);
-			long lastExecUser = info.lastExecutionTimeUserWide.get(channel).get(userId);
-			long callsChannel = info.totalExecutionsChannelWide.get(channel);
-			long callsUser = info.totalExecutionsUserWide.get(channel).get(userId);
-			System.out.println(info.calledAlias+" globalCd: "+globalCd+" userCd: "+userCd+" globalMax: "+globalMax+" userMax: "+userMax);
-			System.out.println(info.calledAlias+" lastExecChannel: "+lastExecChannel+" lastExecUser: "+lastExecUser
-					+" callsChannel: "+callsChannel+" callsUser: "+callsUser);
-			return ((lastExecChannel + globalCd * 1000 < current||globalCd==0) &&
-					(lastExecUser + userCd * 1000 < current||userCd==0) &&
-					(callsChannel < globalMax||globalMax==0) &&
-					(callsUser < userMax||userMax==0));
-		}catch (Exception e){
-			return true;
+	public static void resetAllCd(BotChannel channel){
+		channel.commandsExecuteCount.clear();
+		channel.commandsLastExecute.clear();
+		for(BotUser user : channel.getUsersById().values()){
+			user.commandsExecuteCount.clear();
+			user.commandsLastExecute.clear();
 		}
+
 	}
-	private static EnumAccessLevel getAccessLevelByPackageName(ICommand command){
+	private static boolean canExecute(CommandInfo info, BotChannel channel, BotUser user){
+		final long currentTime = System.currentTimeMillis();
+
+		long lastChannelCmdCall = channel.commandsLastExecute.getOrDefault(info, 0L);
+		int channelCmdCount = channel.commandsExecuteCount.getOrDefault(info, 0);
+		long lastUserCmdCall = user.commandsLastExecute.getOrDefault(info, 0L);
+		int userCmdCount = user.commandsExecuteCount.getOrDefault(info, 0);
+		long maxChannelCmdCalls = info.executor.getGlobalMaxCalls();
+		long maxUserCmdCalls = info.executor.getUserMaxCalls(user);
+
+		if(lastChannelCmdCall + info.executor.getGlobalCooldown() *1000>currentTime) return false;
+		if(channelCmdCount>=maxChannelCmdCalls&&maxChannelCmdCalls>0) return false;
+		if(lastUserCmdCall + info.executor.getUserCooldown(user) *1000>currentTime) return false;
+		return userCmdCount < maxUserCmdCalls || maxUserCmdCalls <= 0;
+	}
+
+	private static int getAccessLevelByPackageName(ICommand command){
 		String packageName = command.getClass().getPackageName();
 		packageName = packageName.substring(packageName.lastIndexOf(("."))+1);
 		switch (packageName){
-			case "owner": return EnumAccessLevel.OWNER;
-			case "broadcaster": return EnumAccessLevel.BROADCASTER;
-			case "moder": return EnumAccessLevel.MODER;
-			case "subscriber": return EnumAccessLevel.SUBSCRIBER;
-			case "regular": return EnumAccessLevel.REGULAR;
+			case "owner": return AccessLevels.OWNER;
+			case "broadcaster": return AccessLevels.BROADCASTER;
+			case "moder": return AccessLevels.MODER;
+			case "subscriber": return AccessLevels.SUBSCRIBER;
+			case "regular": return AccessLevels.REGULAR;
 		}
 		throw new RuntimeException("Unknown access level for command class "+command.getClass().getName());
 	}

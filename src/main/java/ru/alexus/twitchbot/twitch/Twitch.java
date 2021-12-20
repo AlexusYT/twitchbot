@@ -2,122 +2,142 @@ package ru.alexus.twitchbot.twitch;
 
 
 import ru.alexus.twitchbot.Globals;
-import ru.alexus.twitchbot.Utils;
-import ru.alexus.twitchbot.shared.Channel;
+import ru.alexus.twitchbot.bot.IBotEvents;
+import ru.alexus.twitchbot.bot.TwitchBot;
+import ru.alexus.twitchbot.bot.TwitchUser;
+import ru.alexus.twitchbot.bot.TwitchWhisper;
 import ru.alexus.twitchbot.twitch.commands.CommandInfo;
 import ru.alexus.twitchbot.twitch.commands.CommandManager;
 import ru.alexus.twitchbot.twitch.commands.CommandResult;
-import ru.alexus.twitchbot.twitch.commands.EnumAccessLevel;
-import ru.alexus.twitchbot.twitch.objects.MsgTags;
-import ru.alexus.twitchbot.twitch.objects.User;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
 
-public class Twitch extends TwitchHelper {
-	public static final String databaseUrl = "jdbc:mysql://slymcdb.cusovblh0zzb.eu-west-2.rds.amazonaws.com";
-	public static final String databaseLogin = "admin";
-	public static final String databasePass = "nBeXaR8bLByWwyF";
+public class Twitch implements IBotEvents {
+	private final LinkedHashMap<String, BotChannel> channels = new LinkedHashMap<>();
+	private TwitchBot bot;
+	private final Database botDatabase;
 
-
-
-	public static void startBot(){
-		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-			Globals.log.info("Shutting down");
-			for (Channel channel : Channels.getChannels().values()) {
-				channel.saveTotalMessagesToDB();
-				channel.saveBuggycoinsToDB();
-			}
-
-		}));
-
-		Globals.log.info("Waiting user auth");
-		/*while (Globals.userAccessToken==null){
-			try {
-				TimeUnit.MILLISECONDS.sleep(50);
-			} catch (InterruptedException ignored) {}
-		}*/
-		Globals.log.info("Waiting webserver to be ready");
-
-		while (!Globals.readyToBotStart){
-			try {
-				TimeUnit.MILLISECONDS.sleep(50);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-		}
-		Globals.log.info("Twitch bot thread started");
-		Utils.init();
-		new Thread(TwitchHelper::senderThread).start();
-		new Thread(TwitchHelper::botListUpdater).start();
-		new Thread(TwitchHelper::connectionMonitor).start();
-		while (!Globals.shutdownTwitchBot){
-			try {
-				connectToTwitch();
-				run();
-			}catch (Exception e){
-				Globals.log.error("Bot crashed. Restarting", e);
-
-				try {
-					Thread.sleep(1000);
-				} catch (InterruptedException ignored) {}
-			}
-		}
-		Globals.log.info("Twitch bot thread ended");
+	public Twitch(Database botDatabase) {
+		this.botDatabase = botDatabase;
 	}
+
+
+	@Override
+	public void onWhisper(TwitchBot bot, TwitchUser user, TwitchWhisper message) {
+		System.out.println(user.getDisplayName()+" whispered: "+message.getText());
+		if(!user.isOwner()) return;
+
+		String[] command = message.getText().split(" ", 3);
+		String alias = command[0].substring(1).toLowerCase(Locale.ROOT);
+
+		CommandInfo cmd = CommandManager.getCommand(alias);
+		if(cmd==null) return;
+
+		String args = "";
+		if(command.length == 2) args = command[1];
+		else if(command.length == 3) args = command[1]+" "+command[2];
+		CommandResult result = cmd.executor.execute(cmd, args, args.split(" "), message, this, user, new CommandResult());
+		if(result==null||result.resultMessage==null||result.resultMessage.isEmpty()) return;
+		bot.sendWhisper(user.getDisplayName(), result.resultMessage);
+
+	}
+
+	@Override
+	public String onSendingWhisper(TwitchBot bot, String message) {
+		System.out.println("Sending whisper: "+message);
+		return message;
+	}
+
+	@Override
+	public void onBotConnectionFailure(TwitchBot bot, Throwable throwable) {
+		for (BotChannel channel : channels.values()){
+			channel.saveData();
+		}
+		System.out.println("Bot failure: "+throwable);
+		throwable.printStackTrace();
+		CommandManager.unregisterAll();
+	}
+
+	@Override
+	public void onBotConnectionSuccessful(TwitchBot bot) {
+		this.bot = bot;
+		CommandManager.registerAll();
+		Globals.log.info("Bot "+bot.getBotUsername()+" connected to Twitch");
+	}
+	@Override
+	public void onBotStopping(TwitchBot bot) {
+		System.out.println("Bot stopping");
+		for(BotChannel channel : channels.values()){
+			if(!channel.isActivated()) continue;
+			System.out.println("Saving data for channel "+channel);
+			channel.saveData();
+			if(!channel.isEnabled()) continue;
+			channel.sendMessage(channel.getByeMsg(), null, null);
+		}
+		this.bot = bot;
+
+		CommandManager.unregisterAll();
+	}
+	@Override
+	public void onBotStopped(TwitchBot bot) {
+		this.bot = bot;
+		System.out.println("Bot stopped");
+	}
+
+	@Override
+	public boolean onBotConnectionRetryStarted(TwitchBot bot) {
+		this.bot = bot;
+		System.out.println("Reconnecting");
+		return true;
+	}
+
+	public BotChannel getChannelByName(String name) {
+		return channels.get(name);
+	}
+
+	public boolean joinChannel(String name){
+		try {
+			if(channels.containsKey(name)) return false;
+
+			ResultSet set = botDatabase.executeSelect("channels", "*", "name = ?", name);
+			if(set.next()){
+				BotChannel channel = new BotChannel(set, this);
+				channels.put(channel.getName(), channel);
+				bot.addChannel(channel.getName(), channel);
+			}
+			return true;
+
+		} catch (SQLException e) {
+			e.printStackTrace();
+			return false;
+		}
+	}
+	public void leaveChannel(String name){
+		bot.leaveChannel(name);
+		channels.remove(name);
+	}
+
+	public void stopBot(){
+		bot.stopBot();
+	}
+
+	public void addChannel(String name, BotChannel channel) {
+		channels.put(name, channel);
+		bot.addChannel(name, channel);
+	}
+
+
+	/*
 
 
 	public static void onPrivMsg(MsgTags tags, User user, String message){
 
-		Profiler.start("User registering");
-		if(tags.channel.registerUser(user)){
-			tags.channel.addUserToCurrentSession(user);
-		}else{
-			if(tags.channel.enabled)
-				Globals.log.info("Failed to add user "+user.getDisplayName());
-		}
-		Profiler.endAndPrint();
 
-		Globals.log.info(user.getDisplayName()+": "+message);
-
-		Profiler.start("First msg check");
-		String msgToSend = "";
-		if(tags.isFirstMsg())
-			msgToSend = "Чатик, поздоровайтесь с {.caller}. Он первый раз на нашем канале!";
-		else if(tags.channel.enabled&&user.messagesInSession==-1&&user.getLevel().ordinal() < EnumAccessLevel.BROADCASTER.ordinal()){
-			CommandInfo commandInfo = CommandManager.getCommand("привет");
-			CommandResult result = commandInfo.executor.execute(commandInfo, "", new String[]{""}, tags, tags.channel, tags.getUser(), new CommandResult());
-			msgToSend = result.resultMessage;
-		}
-		Profiler.endAndPrint();
-
-		Profiler.start("Executing command");
-		CommandInfo cmd = null;
-		try {
-			cmd = CommandManager.extractCommand(message, tags);
-			if(cmd==null){
-			}else {
-				String result = CommandManager.executeCommand(message, tags, cmd);
-				if (result != null) msgToSend = result;
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
-			msgToSend = "Возникла ошибка при выполнении команды " + message;
-		}
-		if((msgToSend == null || msgToSend.isEmpty())&&message.length()>1&&tags.channel.enabled){
-			if(Utils.converter.isNeedToConvert(message)){
-				msgToSend = "Видимо, {.caller} хотел сказать \""+Utils.converter.mirrorLayout(message)+"\"";
-			}
-		}
-		Twitch.sendMsg("/vip "+user.getDisplayName().toLowerCase(Locale.ROOT), tags.channel, true);
-		Profiler.endAndPrint();
-		Profiler.start("Sending result");
-		if(cmd==null)
-			Twitch.sendMsgReplace(msgToSend, tags, null, true);
-		else
-			Twitch.sendMsgReplace(msgToSend, tags, cmd, cmd.level.ordinal()>EnumAccessLevel.SUBSCRIBER.ordinal());
-		Profiler.endAndPrint();
 		Profiler.start("Updating user stats");
 		if(user.messagesInSession!=-1) user.messagesInSession++;
 		if(!tags.channel.enabled) return;
@@ -136,17 +156,6 @@ public class Twitch extends TwitchHelper {
 		Profiler.endAndPrint();
 	}
 
+*/
 
-	public static void shutdownBot() {
-		Globals.shutdownTwitchBot = true;
-	}
-
-
-	public static void onLeft(String user, String channel) {
-		Globals.log.info("User "+user+" left "+channel);
-	}
-
-	public static void onJoin(String user, String channel){
-		Globals.log.info("User "+user+" joined "+channel);
-	}
 }

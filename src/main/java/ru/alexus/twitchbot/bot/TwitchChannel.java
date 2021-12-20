@@ -1,16 +1,17 @@
 package ru.alexus.twitchbot.bot;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
 
+import static ru.alexus.twitchbot.Utils.replaceVar;
+
 public class TwitchChannel {
 
 	private static final double time = 30;
-	private final HashMap<String, TwitchUser> userByName = new HashMap<>();
-	private final HashMap<Integer, TwitchUser> userById = new HashMap<>();
 	TwitchUser botUser;
 	private double cooldown = 1000;
 	IChannelEvents listener;
@@ -56,21 +57,18 @@ public class TwitchChannel {
 		}
 	}
 
-	public synchronized void updateUser(@NotNull TwitchUser newUser){
-		TwitchUser old = userById.remove(newUser.getUserId());
-		if (old == null) old = new TwitchUser(newUser);
-		else {
-			userByName.remove(old.getLogin());
-			old.copyFrom(newUser);
-		}
-		userById.put(old.getUserId(), old);
-		userByName.put(old.getLogin(), old);
+	public void mute(TwitchUser user, int time, String reason){
+		sendMessage("/timeout "+user.getDisplayName()+" "+time+" "+reason);
+	}
 
+	public void sendMessage(String message, @Nullable TwitchMessage twitchMessage){
+		if(twitchMessage!=null)	message = replaceVar("caller", twitchMessage.getTwitchUser().getDisplayName(), message);
+		sendMessage(message);
 	}
 
 	public void sendMessage(String message){
 		try {
-			message = listener.onSendingMessage(this, message);
+			message = listener.onSendingMessage(bot, this, message);
 			if(message==null||message.isEmpty()) return;
 			while (System.currentTimeMillis()-lastSend<cooldown) {
 				TimeUnit.MILLISECONDS.sleep(50);
@@ -94,14 +92,6 @@ public class TwitchChannel {
 
 	public String getChannelName() {
 		return channelName;
-	}
-
-	public HashMap<String, TwitchUser> getUsersByName() {
-		return userByName;
-	}
-
-	public HashMap<Integer, TwitchUser> getUsersById() {
-		return userById;
 	}
 
 	public IChannelEvents getListener() {

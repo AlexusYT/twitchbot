@@ -1,12 +1,11 @@
 package ru.alexus.twitchbot.twitch.commands.regular;
 
-import ru.alexus.twitchbot.shared.Channel;
+import ru.alexus.twitchbot.bot.TwitchMessage;
+import ru.alexus.twitchbot.twitch.BotChannel;
+import ru.alexus.twitchbot.twitch.BotUser;
 import ru.alexus.twitchbot.twitch.commands.CommandInfo;
 import ru.alexus.twitchbot.twitch.commands.CommandResult;
-import ru.alexus.twitchbot.twitch.commands.EnumAccessLevel;
 import ru.alexus.twitchbot.twitch.commands.SubCommandInfo;
-import ru.alexus.twitchbot.twitch.objects.MsgTags;
-import ru.alexus.twitchbot.twitch.objects.User;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -40,22 +39,22 @@ public class DictionaryAddCmd extends SubCommandInfo {
 	}*/
 
 	@Override
-	public CommandResult execute(CommandInfo command, String text, String[] args, MsgTags tags, Channel channel, User caller, CommandResult result) {
-		if(text.isEmpty()) return super.execute(command, text, args, tags, channel, caller, result);
+	public CommandResult execute(CommandInfo command, String text, String[] args, TwitchMessage twitchMessage, BotChannel botChannel, BotUser caller, CommandResult result) {
+		if(text.isEmpty()) return super.execute(command, text, args, twitchMessage, botChannel, caller, result);
 
 		try {
-			result = channel.checkSufficientCoins(caller, command);
+			result = caller.checkSufficientCoins(command);
 			if(!result.sufficientCoins) return result;
 
-			tags.channel.executeInsert("dictionary", "twitchID,text,textHash", "?,?,MD5(text)",  tags.getUser().getUserId(), text);
+			botChannel.getDatabase().executeInsert("dictionary", "twitchID,text,textHash", "?,?,MD5(text)",  caller.getUserId(), text);
 			result.resultMessage = "{.caller}, \""+text+"\" добавлено в словарь";
 			return result;
 		} catch (SQLIntegrityConstraintViolationException e) {
 			result.coinCost = 0;
 			try {
-				ResultSet resultSet = tags.channel.executeSelect("dictionary", "twitchID", "textHash = MD5(?)", text);
+				ResultSet resultSet = botChannel.getDatabase().executeSelect("dictionary", "twitchID", "textHash = MD5(?)", text);
 				resultSet.next();
-				User user = tags.channel.getUserById(resultSet.getInt("twitchID"));
+				BotUser user = botChannel.getUserById(resultSet.getInt("twitchID"));
 				resultSet.close();
 				result.resultMessage = "{.caller}, \"" + text + "\" уже есть в словаре благодаря "+user.getDisplayName();
 				return result;
@@ -85,7 +84,7 @@ public class DictionaryAddCmd extends SubCommandInfo {
 	}
 
 	@Override
-	public int getCoinCost(EnumAccessLevel level) {
+	public int getCoinCost(BotUser user) {
 		return 50;
 	}
 }

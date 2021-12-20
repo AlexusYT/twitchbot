@@ -1,12 +1,19 @@
 package ru.alexus.twitchbot.twitch.commands;
 
-import ru.alexus.twitchbot.shared.Channel;
-import ru.alexus.twitchbot.twitch.objects.MsgTags;
-import ru.alexus.twitchbot.twitch.objects.User;
+import ru.alexus.twitchbot.bot.TwitchMessage;
+import ru.alexus.twitchbot.bot.TwitchUser;
+import ru.alexus.twitchbot.bot.TwitchWhisper;
+import ru.alexus.twitchbot.twitch.BotChannel;
+import ru.alexus.twitchbot.twitch.BotUser;
+import ru.alexus.twitchbot.twitch.Twitch;
 
 public interface ICommand {
 
-	CommandResult execute(CommandInfo command, String text, String[] args, MsgTags tags, Channel channel, User caller, CommandResult result);
+	CommandResult execute(CommandInfo command, String text, String[] args, TwitchMessage twitchMessage, BotChannel botChannel, BotUser caller, CommandResult result);
+
+	default CommandResult execute(CommandInfo command, String text, String[] args, TwitchWhisper twitchWhisper, Twitch bot, TwitchUser caller, CommandResult result){
+		return result;
+	}
 
 	String[] getAliases();
 
@@ -14,11 +21,11 @@ public interface ICommand {
 		return null;
 	}
 
-	default EnumAccessLevel getAccessLevel(){
-		return null;
+	default int getAccessLevel(){
+		return 0;
 	}
 
-	default int getCoinCost(EnumAccessLevel level){
+	default int getCoinCost(BotUser user){
 		return 0;
 	}
 
@@ -26,7 +33,7 @@ public interface ICommand {
 		return 0;
 	}
 
-	default long getUserCooldown(EnumAccessLevel level){
+	default long getUserCooldown(BotUser user){
 		return 0;
 	}
 
@@ -34,7 +41,7 @@ public interface ICommand {
 		return 0;
 	}
 
-	default long getUserMaxCalls(EnumAccessLevel level){
+	default long getUserMaxCalls(BotUser user){
 		return 0;
 	}
 }

@@ -2,26 +2,22 @@ package ru.alexus.twitchbot;
 
 import org.apache.commons.lang3.text.WordUtils;
 import ru.alexus.twitchbot.langTypos.LangTypos_v2;
-import ru.alexus.twitchbot.twitch.commands.CommandInfo;
 import ru.alexus.twitchbot.twitch.Profiler;
 import ru.alexus.twitchbot.twitch.WordCases;
-import ru.alexus.twitchbot.twitch.objects.MsgTags;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
-import java.awt.*;
 import java.io.*;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
 import java.util.*;
 import java.util.List;
 import java.util.regex.Pattern;
 
 public class Utils {
 	public static LangTypos_v2 converter;
-	private static HashMap<Character, Character> charsRuEn = new HashMap<>();
-	private static HashMap<Character, Character> charsEnRu = new HashMap<>();
+	private static final HashMap<Character, Character> charsRuEn = new HashMap<>();
+	private static final HashMap<Character, Character> charsEnRu = new HashMap<>();
 	public static void init(){
 		String ruChars = "йцукенгшщзхъфывапролджэячсмитьбю.,!\"№;%:?*()_+";
 		String enChars = "qwertyuiop[]asdfghjkl;'zxcvbnm,./?!@#$%^&*()_+";
@@ -30,12 +26,21 @@ public class Utils {
 			charsEnRu.put(enChars.charAt(i), ruChars.charAt(i));
 		}
 		Profiler.start("Creating LangTypos_v2");
-		converter = new LangTypos_v2(); /** создаём объект класса */
+		converter = new LangTypos_v2();
 		Profiler.endAndPrint();
 		Profiler.start("loadDictionaries");
-		converter.loadDictionaries(); /** загружаем словари */
+		converter.loadDictionaries();
 		Profiler.endAndPrint();
 	}
+	public static void deinit(){
+		charsRuEn.clear();
+		charsEnRu.clear();
+		converter.unloadDictionaries();
+		converter = new LangTypos_v2();
+		converter.loadDictionaries();
+
+	}
+
 	public static Random random = new Random();
 	private static final Pattern pattern = Pattern.compile(
 			"[а-яА-ЯёЁ" +    //буквы русского алфавита
@@ -58,38 +63,10 @@ public class Utils {
 	public static String getRandomText(List<String> strs){
 		return strs.get(random.nextInt(strs.size()));
 	}
-	/*
-	{.varname} - value of varname will be replaced as is
-	{varname} - value of varname will be replaced as lower
-	{VARNAME} - value of varname will be replaced as upper
-	{Varname} - value of varname will be replaced as normal (first is capital)
-	{caller} - caller's nick
-	{alias} - called command alias
-	 */
-	public static String replaceVars(String message, MsgTags tags, CommandInfo alias){
-		Profiler.start("replaceVars");
-		message = replaceVar("caller", tags.getUser().getDisplayName(), message);
-		message = replaceVar("coins", Utils.pluralizeMessageCoin(tags.getUser().getBuggycoins()), message);
-		if(alias==null){
-			Profiler.endAndPrint();
-			return message;
-		}
-		CommandInfo mainCommand = alias.parentCommand != null ? alias.parentCommand : alias;
-		CommandInfo subCommand = null;
-		if(alias.parentCommand!=null&&alias.subCommands==null){
-			subCommand = alias;
-		}
 
-		message = replaceVar("alias", mainCommand.calledAlias, message);
-		if(subCommand!=null)
-			message = replaceVar("subalias", subCommand.calledAlias, message);
-
-		Profiler.endAndPrint();
-		return message;
-	}
 
 	public static String replaceVar(String var, String value, String message){
-
+		if(message==null||var==null||value==null) return null;
 		message = message.replaceAll("\\{\\."+var+"}", value);
 		message = message.replaceAll("\\{"+var.toLowerCase(Locale.ROOT)+"}", value.toLowerCase(Locale.ROOT));
 		message = message.replaceAll("\\{"+var.toUpperCase(Locale.ROOT)+"}", value.toUpperCase(Locale.ROOT));
@@ -234,10 +211,4 @@ public class Utils {
 		return System.getenv("PORT")!=null;
 	}
 
-	/*public static void openBrowser(){
-
-		if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
-			Desktop.getDesktop().browse(new URI("http://www.example.com"));
-		}
-	}*/
 }

@@ -2,19 +2,15 @@ package ru.alexus.twitchbot.web;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
-import org.json.JSONObject;
 import ru.alexus.twitchbot.Globals;
-import ru.alexus.twitchbot.shared.Channel;
+import ru.alexus.twitchbot.shared.ChannelOld;
 
 import java.io.*;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
 
 class ChannelHandler implements HttpHandler {
 	String index;
-	Channel channel;
-	public ChannelHandler(Channel channel){
+	ChannelOld channel;
+	public ChannelHandler(ChannelOld channel){
 		this.channel = channel;
 		try {
 			ClassLoader classloader = Thread.currentThread().getContextClassLoader();

@@ -175,6 +175,14 @@ public class LangTypos_v2 {
 
     }
 
+    public void unloadDictionaries(){
+        russianDictionary.clear();
+        englishDictionary.clear();
+        morFormRussianDictionary.clear();
+        loaded = false;
+    }
+
+
     /**
      *
      * @param string входная строка которую нужно "отразить" в другой расскладке
@@ -202,7 +210,7 @@ public class LangTypos_v2 {
         int result = 0;
         String[] words = message.split(" ");
         for (String word : words) {
-
+            if(word.replaceAll("(\\p{P}*)","").isEmpty()) continue;
             String revLayout = mirrorLayout(word);
 
             if(russianDictionary.contains(revLayout.toLowerCase()) || englishDictionary.contains(revLayout.toLowerCase()) || englishDictionary.contains(revLayout)){
@@ -222,7 +230,6 @@ public class LangTypos_v2 {
             }
         }
         double percent = result/(double)words.length*100.0;
-        System.out.println(percent);
         /*if (percent <= 100 && percent >= 60) {
             return true;
 
@@ -280,7 +287,7 @@ public class LangTypos_v2 {
     }
 
 
-
-
-
+    public boolean isLoaded() {
+        return loaded;
+    }
 }

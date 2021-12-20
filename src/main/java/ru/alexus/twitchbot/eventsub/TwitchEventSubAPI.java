@@ -1,5 +1,7 @@
 package ru.alexus.twitchbot.eventsub;
 
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
 import org.json.JSONObject;
 import org.springframework.lang.NonNull;
 import ru.alexus.twitchbot.Globals;
@@ -53,9 +55,9 @@ public class TwitchEventSubAPI {
 	}
 
 
-	public static EventSubInfo subscribeToEvent(String type, String version, String callback, Map<String, String> condition) throws IOException {
+	@Contract("_, _, _, _ -> new")
+	public static @NotNull EventSubInfo subscribeToEvent(String type, String version, String callback, Map<String, String> condition) throws IOException {
 		String secret = Utils.generateSecret();
-		System.out.println(secret);
 		JSONObject body = new JSONObject();
 		body.put("type", type);
 		body.put("version", version);

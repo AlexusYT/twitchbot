@@ -114,4 +114,9 @@ public class TwitchMessage {
 	public boolean isEmoteOnly() {
 		return emoteOnly;
 	}
+
+	@Override
+	public String toString() {
+		return text;
+	}
 }

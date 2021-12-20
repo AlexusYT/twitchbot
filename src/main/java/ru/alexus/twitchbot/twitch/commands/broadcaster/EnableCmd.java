@@ -1,62 +1,67 @@
 package ru.alexus.twitchbot.twitch.commands.broadcaster;
 
 import ru.alexus.twitchbot.Globals;
-import ru.alexus.twitchbot.shared.Channel;
+import ru.alexus.twitchbot.bot.TwitchMessage;
+import ru.alexus.twitchbot.bot.TwitchUser;
+import ru.alexus.twitchbot.bot.TwitchWhisper;
+import ru.alexus.twitchbot.shared.ChannelOld;
 import ru.alexus.twitchbot.twitch.*;
 import ru.alexus.twitchbot.twitch.commands.CommandInfo;
 import ru.alexus.twitchbot.twitch.commands.CommandResult;
 import ru.alexus.twitchbot.twitch.commands.EnumAccessLevel;
 import ru.alexus.twitchbot.twitch.commands.ICommand;
-import ru.alexus.twitchbot.twitch.objects.MsgTags;
-import ru.alexus.twitchbot.twitch.objects.User;
-
-import java.util.Locale;
 
 public class EnableCmd implements ICommand {
-	/*@Override
-	public String execute(CommandInfo alias, String text, MsgTags tags) {
-		Channel info;
-
-		if(text.isEmpty())
-			info = Channels.getChannel(tags.getChannelName());
-		else
-			info = Channels.getChannel(text.split(" ")[0]);
-		if(info.startSession()){
-			Globals.log.info("Session started for channel "+info.channelName+" with id "+info.sessionId);
-		}else{
-			Globals.log.error("Failed to start session for channel "+info.channelName);
-		}
-		info.enabled = true;
-		if(text.isEmpty()) return info.greetingMsg;
-		else return "Сессия запущена на канале "+info.channelName;
-	}*/
 
 	@Override
-	public CommandResult execute(CommandInfo command, String text, String[] args, MsgTags tags, Channel channel, User caller, CommandResult result) {
-		Channel info;
+	public CommandResult execute(CommandInfo command, String text, String[] args, TwitchMessage twitchMessage, BotChannel botChannel, BotUser caller, CommandResult result) {
+		BotChannel channel;
 		if(args[0].isEmpty())
-			info = Channels.getChannel(tags.getChannelName());
-		else if(caller.getLevel()==EnumAccessLevel.OWNER)
-			info = Channels.getChannel(args[0]);
+			channel = botChannel;
+		else if(caller.isOwner())
+			channel = botChannel.getChannelByName(args[0]);
 		else{
 			result.resultMessage = "Управлять сессиями на других каналах может только OWNER";
 			return result;
 		}
-		if(info.enabled){
-			if(args[0].isEmpty()) result.resultMessage = "На этом канале сессия уже запущена";
-			else result.resultMessage = "Сессия уже запущена на канале "+info.channelName;
+		return execute(channel, result, args[0].isEmpty());
+	}
+
+	@Override
+	public CommandResult execute(CommandInfo command, String text, String[] args, TwitchWhisper twitchWhisper, Twitch bot, TwitchUser caller, CommandResult result) {
+		BotChannel channel;
+		if(args[0].isEmpty()) {
+			result.resultMessage = "Укажи название канала";
+			return result;
+		}else if(caller.isOwner())
+			channel = bot.getChannelByName(args[0]);
+		else{
+			result.resultMessage = "Управлять сессиями на других каналах может только OWNER";
+			return result;
+		}
+		return execute(channel, result, args[0].isEmpty());
+	}
+
+	private CommandResult execute(BotChannel channel, CommandResult result, boolean thisChannel){
+		if(channel==null){
+			result.resultMessage = "Сначала подключи меня к этому каналу :D";
+			return result;
+		}
+		if(channel.isEnabled()){
+			if(thisChannel) result.resultMessage = "На этом канале сессия уже запущена";
+			else result.resultMessage = "Сессия уже была запущена ранее на канале "+channel.getName();
 			return result;
 		}
 
-		if(info.startSession()){
-			Globals.log.info("Session started for channel "+info.channelName+" with id "+info.sessionId);
+		if(channel.startSession()){
+			Globals.log.info("Session started for channel "+channel.getName()+" with id "+channel.getSessionId());
 		}else{
-			Globals.log.error("Failed to start session for channel "+info.channelName);
+			Globals.log.error("Failed to start session for channel "+channel.getName());
 		}
-		info.enabled = true;
+		channel.setEnabled(true);
 
-		if(args[0].isEmpty()) result.resultMessage = info.greetingMsg;
-		else result.resultMessage = "Сессия запущена на канале "+info.channelName;
+		if(thisChannel) result.resultMessage = channel.getGreetMsg();
+		else result.resultMessage = "Сессия запущена на канале "+channel.getName();
 		return result;
 	}
 

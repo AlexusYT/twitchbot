@@ -1,18 +1,18 @@
 package ru.alexus.twitchbot.twitch.commands.regular;
 
 import ru.alexus.twitchbot.Utils;
-import ru.alexus.twitchbot.shared.Channel;
+import ru.alexus.twitchbot.bot.TwitchMessage;
+import ru.alexus.twitchbot.twitch.BotChannel;
+import ru.alexus.twitchbot.twitch.BotUser;
 import ru.alexus.twitchbot.twitch.commands.CommandInfo;
 import ru.alexus.twitchbot.twitch.WordCases;
 import ru.alexus.twitchbot.twitch.commands.CommandResult;
 import ru.alexus.twitchbot.twitch.commands.MainCommandInfo;
-import ru.alexus.twitchbot.twitch.objects.MsgTags;
-import ru.alexus.twitchbot.twitch.objects.User;
 
 public class MeasureCmd extends MainCommandInfo {
 	@Override
-	public CommandResult execute(CommandInfo command, String text, String[] args, MsgTags tags, Channel channel, User caller, CommandResult result) {
-		if(args[0].isEmpty()) return super.execute(command, text, args, tags, channel, caller, result);
+	public CommandResult execute(CommandInfo command, String text, String[] args, TwitchMessage twitchMessage, BotChannel botChannel, BotUser caller, CommandResult result) {
+		if(args[0].isEmpty()) return super.execute(command, text, args, twitchMessage, botChannel, caller, result);
 
 		int val = Utils.random.nextInt(40)-2;
 		int ed = Utils.random.nextInt(3);
@@ -26,22 +26,11 @@ public class MeasureCmd extends MainCommandInfo {
 			if(cases!=null&&cases.genitive!=null&&!cases.genitive.isEmpty()) word = cases.genitive;
 		}
 		switch (word) {
-			case "меня":
-			case "роста":
-				result.resultMessage = "{.caller}, твой рост равен " + val + s;
-				break;
-			case "его":
-				result.resultMessage = "{.caller}, его рост равен " + val + s;
-				break;
-			case "её":
-				result.resultMessage = "{.caller}, её рост равен " + val + s;
-				break;
-			case "их":
-				result.resultMessage = "{.caller}, их рост равен " + val + s;
-				break;
-			default:
-				result.resultMessage = "{.caller}, длина " + word + " равна " + val + s;
-				break;
+			case "меня", "роста" -> result.resultMessage = "{.caller}, твой рост равен " + val + s;
+			case "его" -> result.resultMessage = "{.caller}, его рост равен " + val + s;
+			case "её" -> result.resultMessage = "{.caller}, её рост равен " + val + s;
+			case "их" -> result.resultMessage = "{.caller}, их рост равен " + val + s;
+			default -> result.resultMessage = "{.caller}, длина " + word + " равна " + val + s;
 		}
 
 		return result;

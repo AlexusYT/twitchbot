@@ -4,21 +4,20 @@ import com.sun.net.httpserver.HttpContext;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
-import org.json.JSONObject;
-import org.springframework.http.HttpEntity;
 import org.springframework.lang.NonNull;
 import ru.alexus.twitchbot.Globals;
-import ru.alexus.twitchbot.Utils;
+import ru.alexus.twitchbot.bot.TwitchBot;
 import ru.alexus.twitchbot.eventsub.EventSubInfo;
 import ru.alexus.twitchbot.eventsub.TwitchEventSubAPI;
-import ru.alexus.twitchbot.shared.Channel;
-import ru.alexus.twitchbot.twitch.Channels;
+import ru.alexus.twitchbot.shared.ChannelOld;
+import ru.alexus.twitchbot.twitch.BotChannel;
+import ru.alexus.twitchbot.twitch.Database;
+import ru.alexus.twitchbot.twitch.Twitch;
 
 import java.io.*;
 import java.net.*;
-import java.net.http.HttpClient;
-import java.net.http.HttpResponse;
-import java.nio.charset.StandardCharsets;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -26,53 +25,114 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 public class Web {
-	static HttpServer server;
-	private static LinkedHashMap<String, HttpContext> channelContexts;
+	private HttpServer server;
+	private final LinkedHashMap<String, BotChannel> channels = new LinkedHashMap<>();
+	private final int port;
+	private final Twitch twitch;
+	private final Database botDatabase;
 
-	public static void startWeb(){
+	public Web(int port, Twitch twitch, Database botDatabase){
+		this.port = port;
+		this.twitch = twitch;
+		this.botDatabase = botDatabase;
+	}
 
-		Globals.log.info("Getting app access token");
+	public void start() throws IOException {
+		new Thread(() -> {
+			Globals.log.info("Getting an app access token");
 
 //https://id.twitch.tv/oauth2/authorize?response_type=code&client_id=cxxcdpgmikulrcqf6wb899qxgfgrkw&redirect_uri=http://localhost&scope=viewing_activity_read%20channel:read:subscriptions%20channel:moderate%20channel:manage:redemptions&state=c3ab8aa609ea11e793ae92361f002671'
+			while (Globals.appAccessToken==null){
+				try {
+					Globals.appAccessToken = TwitchEventSubAPI.getAppAccessToken("viewing_activity_read", "channel:read:subscriptions", "channel:moderate", "channel:manage:redemptions");
+
+					System.out.println(Globals.appAccessToken);
+				}catch (Exception e) {
+					Globals.log.error("Failed to get app access token", e);
+					try {
+						TimeUnit.SECONDS.sleep(2);
+					} catch (InterruptedException ignored) {}
+				}
+			}
+			Globals.log.info("App access token received");
+		}).start();
+		server = HttpServer.create(new InetSocketAddress(port), 0);
+		server.createContext("/", new MyHandler());
+		server.setExecutor(null); // creates a default executor
+		server.start();
+
+		try {
+			ResultSet set = botDatabase.executeSelect("channels");
+			while (set.next()){
+				BotChannel channel = new BotChannel(set, twitch);
+				if(!channel.isActivated()) continue;
+				channels.put(channel.getName(), channel);
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		Globals.log.info("Waiting an app access token");
 		while (Globals.appAccessToken==null){
 			try {
-				Globals.appAccessToken = TwitchEventSubAPI.getAppAccessToken("viewing_activity_read", "channel:read:subscriptions", "channel:moderate", "channel:manage:redemptions");
+				TimeUnit.MILLISECONDS.sleep(50);
+			} catch (InterruptedException ignored) {}
+		}
+	}
 
-				System.out.println(Globals.appAccessToken);
-			}catch (Exception e) {
-				Globals.log.error("Failed to get app access token", e);
+	public void unsubscribeAllEvents(){
+		Globals.log.info("Unsubscribing all subscriptions");
+		try {
+			LinkedList<EventSubInfo> events = TwitchEventSubAPI.getSubscribedEvent(null, null);
+			for (EventSubInfo event : events) {
 				try {
-					TimeUnit.SECONDS.sleep(2);
-				} catch (InterruptedException ignored) {}
+					int resultCode = TwitchEventSubAPI.deleteSubscribedEvent(event);
+					if (resultCode == 204) Globals.log.info("Event unsubscribed: " + event);
+					else Globals.log.error("Failed to unsubscribe event: " + event + ". Response code: " + resultCode);
+				} catch (Exception e) {
+					Globals.log.error("Failed to unsubscribe event: " + event, e);
+				}
+			}
+			Globals.log.info("Unsubscribing finished");
+		}catch (Exception e){
+			Globals.log.error("Failed to unsubscribe events", e);
+		}
+	}
+
+	public void subscribeChannelsEvents(){
+		for(BotChannel channel : channels.values()){
+			ChannelCallback callback =  new ChannelCallback(channel);
+			server.createContext("/"+channel.getName()+"/callback", callback);
+			for(Map.Entry<String, EventSubInfo> event : channel.getEvents().entrySet()){
+				HashMap<String, String> conditions = new HashMap<>();
+				switch (event.getKey()) {
+					case "stream.offline", "stream.online", "channel.channel_points_custom_reward_redemption.add" ->
+							conditions.put("broadcaster_user_id", String.valueOf(channel.getTwitchID()));
+				}
+				try {
+					event.setValue(TwitchEventSubAPI.subscribeToEvent(event.getKey(), "1", Globals.serverAddress+channel.getName()+"/callback", conditions));
+					Globals.log.info("Event subscribed: " + event.getValue());
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
 			}
 		}
-		Globals.log.info("App access token received");
+	}
+
+	public void startWeb(){
+
 		boolean tryingStart = true;
 		int tries = 0;
 
 		while (tryingStart){
 			try {
 				Globals.log.info("Starting web-server");
-				String port = System.getenv("PORT");
-				if(port==null) port = "80";
-				server = HttpServer.create(new InetSocketAddress(Integer.parseInt(port)), 0);
+				server = HttpServer.create(new InetSocketAddress(port), 0);
 				server.createContext("/", new MyHandler());
 				server.setExecutor(null); // creates a default executor
 				server.start();
 				tryingStart = false;
 				Globals.log.info("Successfully started web-server");
 
-				Globals.log.info("Unsubscribing all subscriptions");
-				LinkedList<EventSubInfo> events = TwitchEventSubAPI.getSubscribedEvent(null, null);
-				for (EventSubInfo event : events){
-					int resultCode = TwitchEventSubAPI.deleteSubscribedEvent(event);
-					if(resultCode==204)
-						Globals.log.info("Event unsubscribed: "+event);
-					else{
-						Globals.log.error("Failed to unsubscribe event: "+event+". Response code: "+resultCode);
-					}
-
-				}
 				new Thread(()->{
 					while (true){
 						try {
@@ -101,23 +161,14 @@ public class Web {
 
 	private static void clearCallbacks(){
 
-		for (Channel channel : Channels.getChannels().values()){
+		/*for (ChannelOld channel : Channels.getChannels().values()){
 			HttpHandler handler = channel.httpContext.getHandler();
 			if(handler instanceof ChannelCallback callback){
 				callback.clearOldIds();
 			}
-		}
+		}*/
 	}
 
-	@NonNull
-	public static HttpContext registerChannel(@NonNull Channel channel){
-
-		server.createContext("/"+channel.channelName+"/callback", new ChannelCallback(channel));
-		return server.createContext("/"+channel.channelName, new ChannelHandler(channel));
-	}
-	public static void unregisterChannel(@NonNull HttpContext channelContext){
-		server.removeContext(channelContext);
-	}
 
 	static class MyHandler implements HttpHandler {
 		@Override

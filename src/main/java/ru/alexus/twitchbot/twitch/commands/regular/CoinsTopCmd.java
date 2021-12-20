@@ -1,27 +1,27 @@
 package ru.alexus.twitchbot.twitch.commands.regular;
 
 import ru.alexus.twitchbot.Utils;
-import ru.alexus.twitchbot.shared.Channel;
+import ru.alexus.twitchbot.bot.TwitchMessage;
+import ru.alexus.twitchbot.twitch.BotChannel;
+import ru.alexus.twitchbot.twitch.BotUser;
 import ru.alexus.twitchbot.twitch.commands.CommandInfo;
 import ru.alexus.twitchbot.twitch.commands.CommandResult;
 import ru.alexus.twitchbot.twitch.commands.ICommand;
-import ru.alexus.twitchbot.twitch.objects.MsgTags;
-import ru.alexus.twitchbot.twitch.objects.User;
 
 import java.util.*;
 
 public class CoinsTopCmd implements ICommand {
 	@Override
-	public CommandResult execute(CommandInfo command, String text, String[] args, MsgTags tags, Channel channel, User caller, CommandResult result) {
+	public CommandResult execute(CommandInfo command, String text, String[] args, TwitchMessage twitchMessage, BotChannel botChannel, BotUser caller, CommandResult result) {
 		int topCout = 5;
-		List<User> top = new LinkedList<>(channel.getUsersById().values());
+		List<BotUser> top = new LinkedList<>(botChannel.getUsersById().values());
 		try{
 			topCout = Math.min(Math.max(Integer.parseInt(args[0]), 1), Math.min(5, top.size()));
 		}catch (Exception ignored){}
-		top.sort(Comparator.comparingInt(User::getBuggycoins));
+		top.sort(Comparator.comparingInt(BotUser::getCoins));
 		if(topCout==1){
-			User user = top.get(top.size()-1);
-			result.resultMessage = "Самый богатый человек на этом канале: "+user.getDisplayName()+" - "+Utils.pluralizeMessageCoin(user.getBuggycoins());
+			BotUser user = top.get(top.size()-1);
+			result.resultMessage = "Самый богатый человек на этом канале: "+user.getDisplayName()+" - "+Utils.pluralizeMessageCoin(user.getCoins());
 			return result;
 		}
 
@@ -29,9 +29,9 @@ public class CoinsTopCmd implements ICommand {
 		String delim = "";
 		for (int i = 0; i < top.size(); i++) {
 			if(i+1>topCout) break;
-			User user = top.get(top.size()-i-1);
+			BotUser user = top.get(top.size()-i-1);
 			builder.append(delim).append(i+1).append(") ").append(user.getDisplayName()).append(" - ");
-			builder.append(Utils.pluralizeMessageCoin(user.getBuggycoins()));
+			builder.append(Utils.pluralizeMessageCoin(user.getCoins()));
 			delim = " | ";
 		}
 		result.resultMessage = "Топ "+topCout+" самых богатых пользователей на этом канале: "+builder;

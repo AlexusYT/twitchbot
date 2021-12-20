@@ -1,13 +1,13 @@
 package ru.alexus.twitchbot.twitch.commands.regular;
 
 import ru.alexus.twitchbot.Utils;
-import ru.alexus.twitchbot.shared.Channel;
+import ru.alexus.twitchbot.bot.TwitchMessage;
+import ru.alexus.twitchbot.twitch.BotChannel;
+import ru.alexus.twitchbot.twitch.BotUser;
 import ru.alexus.twitchbot.twitch.commands.CommandInfo;
 import ru.alexus.twitchbot.twitch.commands.CommandResult;
 import ru.alexus.twitchbot.twitch.commands.EnumAccessLevel;
 import ru.alexus.twitchbot.twitch.commands.MainCommandInfo;
-import ru.alexus.twitchbot.twitch.objects.MsgTags;
-import ru.alexus.twitchbot.twitch.objects.User;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -20,12 +20,12 @@ public class CasinoCmd extends MainCommandInfo {
 
 	LinkedList<String> words = new LinkedList<>(List.of("все", "всё", "оллин", "аллин", "вабанк", "вобанк", "all", "allin", "vabank", "vabanque"));
 	@Override
-	public CommandResult execute(CommandInfo command, String text, String[] args, MsgTags tags, Channel channel, User caller, CommandResult result) {
-		if(args[0].isEmpty()) return super.execute(command, text, args, tags, channel, caller, result);
+	public CommandResult execute(CommandInfo command, String text, String[] args, TwitchMessage twitchMessage, BotChannel botChannel, BotUser caller, CommandResult result) {
+		if(args[0].isEmpty()) return super.execute(command, text, args, twitchMessage, botChannel, caller, result);
 		String word = args[0].toLowerCase(Locale.ROOT).replaceAll("-", "");
 		int bet;
 		if(words.contains(word)){
-			bet = caller.getBuggycoins();
+			bet = caller.getCoins();
 			if(bet<10){
 				result.resultMessage = "{.caller}, у тебя должно быть не менее 10 коинов на счету, чтобы играть";
 				return result;
@@ -41,18 +41,19 @@ public class CasinoCmd extends MainCommandInfo {
 				result.resultMessage = "{.caller}, ставка должна быть больше или равна 10 коинам";
 				return result;
 			}
-			if(caller.getBuggycoins()<bet) {
+			if(caller.getCoins()<bet) {
 				result.resultMessage = "{.caller}, у тебя есть только {coins}";
 				return result;
 			}
 		}
 
 		int resultBet = runRandom(bet);
-		channel.addCoins(caller, resultBet);
-		if(resultBet<0) result.resultMessage = "{.caller} потерял "+Utils.pluralizeMessageCoin(bet);
-		else if(resultBet==0) result.resultMessage = "{.caller} вышел в 0";
-		else if(resultBet==bet*2) result.resultMessage = "{.caller} получил "+Utils.pluralizeMessageCoin(resultBet);
-		else result.resultMessage = "{.caller} получил "+Utils.pluralizeMessageCoin(resultBet);
+		caller.addCoins(resultBet);
+		result.resultMessage = "У {.caller} выпало ";
+		if(resultBet<0) result.resultMessage += "x0 и он потерял "+Utils.pluralizeMessageCoin(bet);
+		else if(resultBet==0) result.resultMessage += "x1 и он вышел в 0";
+		else if(resultBet==bet*2) result.resultMessage += "x2 и он заработал "+Utils.pluralizeMessageCoin(bet);
+		else result.resultMessage += "x50 и он получил "+Utils.pluralizeMessageCoin(resultBet);
 
 		return result;
 	}
@@ -76,8 +77,8 @@ public class CasinoCmd extends MainCommandInfo {
 	}
 
 	@Override
-	public long getUserCooldown(EnumAccessLevel level) {
-		if(level==EnumAccessLevel.REGULAR) return 20*60;
+	public long getUserCooldown(BotUser user) {
+		if(user.isRegular()) return 20*60;
 		return 5*60;
 	}
 
