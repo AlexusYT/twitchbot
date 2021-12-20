@@ -16,6 +16,8 @@
 
 package ru.alexus.twitchbot;
 
+import jdk.jshell.execution.Util;
+import org.springframework.boot.web.embedded.undertow.UndertowServletWebServer;
 import ru.alexus.twitchbot.bot.*;
 import ru.alexus.twitchbot.shared.ChannelOld;
 import ru.alexus.twitchbot.twitch.Database;
@@ -75,6 +77,7 @@ public class Main {
 		web.start();
 		web.unsubscribeAllEvents();
 		web.subscribeChannelsEvents();
+		if(!Utils.isWebHost())
 		ChannelOld.initRoomState();
 		/*Thread webThread = new Thread(Web::startWeb);
 		webThread.start();*/
