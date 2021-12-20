@@ -17,6 +17,7 @@
 package ru.alexus.twitchbot;
 
 import ru.alexus.twitchbot.bot.*;
+import ru.alexus.twitchbot.shared.ChannelOld;
 import ru.alexus.twitchbot.twitch.Database;
 import ru.alexus.twitchbot.twitch.Twitch;
 import ru.alexus.twitchbot.web.Web;
@@ -74,6 +75,7 @@ public class Main {
 		web.start();
 		web.unsubscribeAllEvents();
 		web.subscribeChannelsEvents();
+		ChannelOld.initRoomState();
 		/*Thread webThread = new Thread(Web::startWeb);
 		webThread.start();*/
 	}

@@ -109,7 +109,7 @@ public class Web {
 							conditions.put("broadcaster_user_id", String.valueOf(channel.getTwitchID()));
 				}
 				try {
-					event.setValue(TwitchEventSubAPI.subscribeToEvent(event.getKey(), "1", Globals.serverAddress+channel.getName()+"/callback", conditions));
+					event.setValue(TwitchEventSubAPI.subscribeToEvent(event.getKey(), "1", channel.getName()+"/callback", conditions));
 					Globals.log.info("Event subscribed: " + event.getValue());
 				} catch (IOException e) {
 					e.printStackTrace();

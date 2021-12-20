@@ -9,6 +9,7 @@ import ru.alexus.twitchbot.Utils;
 
 import java.awt.*;
 import java.io.IOException;
+import java.net.StandardSocketOptions;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -58,6 +59,7 @@ public class TwitchEventSubAPI {
 	@Contract("_, _, _, _ -> new")
 	public static @NotNull EventSubInfo subscribeToEvent(String type, String version, String callback, Map<String, String> condition) throws IOException {
 		String secret = Utils.generateSecret();
+		System.out.println(secret);
 		JSONObject body = new JSONObject();
 		body.put("type", type);
 		body.put("version", version);
@@ -92,7 +94,7 @@ public class TwitchEventSubAPI {
 		headers.put("Content-type", "application/json");
 		headers.put("Authorization", "Bearer "+Globals.appAccessToken.getToken());
 		String respStr = Utils.sendGet("https://api.twitch.tv/helix/eventsub/subscriptions", headers, body);
-
+		System.out.println(respStr);
 		JSONObject response = new JSONObject(respStr);
 		if(response.has("pagination"))
 			Globals.log.info("Subs pagination "+response.get("pagination"));

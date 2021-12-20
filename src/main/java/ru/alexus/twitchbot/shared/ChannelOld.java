@@ -2,12 +2,16 @@ package ru.alexus.twitchbot.shared;
 
 import org.json.JSONObject;
 import ru.alexus.twitchbot.Globals;
+import ru.alexus.twitchbot.Utils;
 import ru.alexus.twitchbot.eventsub.EventSubInfo;
 import ru.alexus.twitchbot.eventsub.TwitchEventSubAPI;
 import ru.alexus.twitchbot.eventsub.events.RedemptionAdd;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+
+import static ru.alexus.twitchbot.Utils.sendPost;
 
 public class ChannelOld {
 	private int channelId;
@@ -55,9 +59,9 @@ public class ChannelOld {
 
 	}
 
-	public void initRoomState(String str){
+	public static void initRoomState(){
 
-		/*String secret = "qwer";
+		String secret = "qwer";
 
 		EventSubInfo eventSubInfo = new EventSubInfo("", "channel.ban", "1", "https://alexus-twitchbot.herokuapp.com/alexus_xx/callback", secret);
 		eventSubInfo.setStatus("webhook_callback_verification");
@@ -72,28 +76,21 @@ public class ChannelOld {
 		headers.put("Twitch-eventsub-subscription-type", "channel.ban");
 		headers.put("Content-type", "application/json");
 		headers.put("Authorization", "Bearer "+Globals.appAccessToken.getToken());
-		subscriptions.put("channel.ban", eventSubInfo);
-		for (int j = 0; j < 24; j++) {
-			int finalJ = j;
-			new Thread(()->{
-				for (int i = 0; i < 100000; i++) {
 
-					String messageId = "8f7cfd33-2109-4aea-97c3-633b432cec"+ (finalJ) +" "+i;
-					headers.put("Twitch-eventsub-message-signature", "sha256="+Utils.hmacSha256(messageId+messageTimestamp+body, secret));
-					headers.put("Twitch-eventsub-message-id", messageId);
-					try {
-						sendPost("http://localhost/alexus_xx/callback", headers, body);
-						//System.out.println(result);
-					} catch (IOException e) {
-						e.printStackTrace();
-					}
-				}
-			}).start();
-		}*/
+		String messageId = "8f7cfd33-2109-4aea-97c3-633b432cec";
+		headers.put("Twitch-eventsub-message-signature", "sha256="+ Utils.hmacSha256(messageId+messageTimestamp+body, secret));
+		headers.put("Twitch-eventsub-message-id", messageId);
+		try {
+			sendPost("http://localhost/alexus_xx/callback", headers, body);
+			//System.out.println(result);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 
-			subscribeEvent("channel.ban", Map.of("broadcaster_user_id", String.valueOf(channelId)));
+
+			/*subscribeEvent("channel.ban", Map.of("broadcaster_user_id", String.valueOf(channelId)));
 			subscribeEvent("channel.unban", Map.of("broadcaster_user_id", String.valueOf(channelId)));
-			subscribeEvent("channel.channel_points_custom_reward_redemption.add", Map.of("broadcaster_user_id", String.valueOf(channelId)));
+			subscribeEvent("channel.channel_points_custom_reward_redemption.add", Map.of("broadcaster_user_id", String.valueOf(channelId)));*/
 
 
 	}
