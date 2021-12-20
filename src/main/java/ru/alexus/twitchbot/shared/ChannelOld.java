@@ -61,7 +61,7 @@ public class ChannelOld {
 
 	public static void initRoomState(){
 
-		String secret = "qwer";
+		String secret = "ae7514603bed265d9de55bc5b092dd71dd6b1bdc42131bbd7be3d80d8390cc";
 
 		EventSubInfo eventSubInfo = new EventSubInfo("", "channel.ban", "1", "https://alexus-twitchbot.herokuapp.com/alexus_xx/callback", secret);
 		eventSubInfo.setStatus("webhook_callback_verification");
