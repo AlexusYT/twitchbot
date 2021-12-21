@@ -45,6 +45,8 @@ public class BotChannel implements IChannelEvents, IEventSub {
 	private int deathCounter;
 	private final boolean activated;
 	private boolean enabled;
+	private boolean enableAfterJoin;
+	private boolean finishingStream;
 
 	public BotChannel(@NotNull ResultSet set, Twitch twitch) throws SQLException {
 		this.twitch = twitch;
@@ -77,6 +79,15 @@ public class BotChannel implements IChannelEvents, IEventSub {
 			}
 		}while (true);
 		Globals.log.info("Connection to "+twitchChannel.getChannelName()+" database successful");
+		if(enableAfterJoin){
+			enabled = true;
+			if(this.startSession()){
+				Globals.log.info("Session started for channel "+this.getName()+" with id "+this.getSessionId());
+			}else{
+				Globals.log.error("Failed to start session for channel "+this.getName());
+			}
+			sendMessage(getGreetMsg(), null, null);
+		}
 	}
 
 	@Override
@@ -407,7 +418,9 @@ public class BotChannel implements IChannelEvents, IEventSub {
 
 	@Override
 	public void onRewardRedemption(EventSubInfo subInfo, RedemptionAdd redemptionAdd) {
-		System.out.println("Reward redeemed");
+
+		System.out.println("Reward "+redemptionAdd.getReward().getTitle()+" redeemed");
+		System.out.println("Reward "+redemptionAdd.getReward().getId()+" redeemed");
 	}
 
 	@Override
@@ -417,11 +430,44 @@ public class BotChannel implements IChannelEvents, IEventSub {
 
 	@Override
 	public void onStreamOnline(EventSubInfo subInfo, StreamOnline streamOnline) {
-		System.out.println("Stream online");
+		Globals.log.info("Stream "+this+" online");
+		if(!this.activated) return;
+		if(!finishingStream){
+			Globals.log.info("Notifying "+this+" users");
+		}
+		finishingStream = false;
+		String type = streamOnline.getType();
+		if(type.equals("live")){
+			if(!this.enabled){
+				twitch.addChannel(streamOnline.getBroadcasterLogin(), this);
+				enableAfterJoin=true;
+			}
+		}
+
 	}
 
 	@Override
 	public void onStreamOffline(EventSubInfo subInfo, Event event) {
-		System.out.println("Stream offline");
+		if (!enabled) return;
+		Globals.log.info("Stream "+this+" offline. Waiting for restart");
+		finishingStream = true;
+		long lastTime = System.currentTimeMillis();
+		while (finishingStream){
+			if(lastTime+10*60*1000<System.currentTimeMillis()) {
+				Globals.log.info("Stream still offline. Finishing "+this+" session");
+				if(!this.isActivated()) continue;
+				Globals.log.info("Saving data for channel "+this);
+				this.saveData();
+				if(!this.isEnabled()) continue;
+				this.sendMessage(this.getByeMsg(), null, null);
+				twitch.leaveChannel(event.getBroadcasterLogin());
+				break;
+			}
+			try {
+				TimeUnit.MILLISECONDS.sleep(50);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
 	}
 }

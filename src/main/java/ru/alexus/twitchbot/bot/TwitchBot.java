@@ -51,7 +51,8 @@ public class TwitchBot {
 							}
 						}
 
-					} catch (IOException | ParseException e) {
+					} catch (ConnectException ignored) {
+					}catch (IOException | ParseException e) {
 						e.printStackTrace();
 					}
 					try {
@@ -232,9 +233,7 @@ public class TwitchBot {
 								TwitchChannel channel = joinedChannels.get(channelName);
 								if (channel == null) continue;
 								TwitchMessage message = new TwitchMessage(elements[0].substring(1), elements[4].substring(1));
-								new Thread(() -> {
-									checkExceedLimit(() -> channel.listener.onMessage(this, channel, message.getTwitchUser(), message));
-								}).start();
+								new Thread(() -> checkExceedLimit(() -> channel.listener.onMessage(this, channel, message.getTwitchUser(), message))).start();
 
 							}
 							case "WHISPER" -> {
@@ -285,9 +284,7 @@ public class TwitchBot {
 						}
 					}while (true);
 
-					pendingChannels.putAll(leftChannels);
 					pendingChannels.putAll(joinedChannels);
-					leftChannels.clear();
 					joinedChannels.clear();
 
 				}

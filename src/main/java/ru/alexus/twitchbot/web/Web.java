@@ -4,8 +4,10 @@ import com.sun.net.httpserver.HttpContext;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
+import org.json.JSONObject;
 import org.springframework.lang.NonNull;
 import ru.alexus.twitchbot.Globals;
+import ru.alexus.twitchbot.Utils;
 import ru.alexus.twitchbot.bot.TwitchBot;
 import ru.alexus.twitchbot.eventsub.EventSubInfo;
 import ru.alexus.twitchbot.eventsub.TwitchEventSubAPI;
@@ -23,6 +25,8 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+
+import static ru.alexus.twitchbot.Utils.sendPost;
 
 public class Web {
 	private HttpServer server;
@@ -80,6 +84,7 @@ public class Web {
 	}
 
 	public void unsubscribeAllEvents(){
+		if(!Utils.isWebHost()) return;
 		Globals.log.info("Unsubscribing all subscriptions");
 		try {
 			LinkedList<EventSubInfo> events = TwitchEventSubAPI.getSubscribedEvent(null, null);
@@ -102,6 +107,7 @@ public class Web {
 		for(BotChannel channel : channels.values()){
 			ChannelCallback callback =  new ChannelCallback(channel);
 			server.createContext("/"+channel.getName()+"/callback", callback);
+			if(!Utils.isWebHost()) continue;
 			for(Map.Entry<String, EventSubInfo> event : channel.getEvents().entrySet()){
 				HashMap<String, String> conditions = new HashMap<>();
 				switch (event.getKey()) {
@@ -116,6 +122,89 @@ public class Web {
 				}
 			}
 		}
+
+		if(Utils.isWebHost()) return;
+		new Thread(() -> {
+
+			BotChannel channel  = channels.get("daxtionoff");
+
+			test(channel);
+		}).start();
+	}
+	public static void test(BotChannel channel){
+		String type = "channel.channel_points_custom_reward_redemption.add";
+		String secret = "ae7514603bed265d9de55bc5b092dd71dd6b1bdc42131bbd7be3d80d8390cc";
+
+		EventSubInfo eventSubInfo = new EventSubInfo("", type, "1", "https://alexus-twitchbot.herokuapp.com/alexus_xx/callback", secret);
+		eventSubInfo.setStatus("webhook_callback_verification");
+		channel.getEvents().put(type, eventSubInfo);
+		JSONObject object = new JSONObject();
+		JSONObject subscription = new JSONObject();
+		{
+			subscription.put("id", "bb6f317e-7319-4e27-8114-91ebfecb9bb3");
+			subscription.put("status", "enabled");
+			subscription.put("type", type);
+			subscription.put("version", "1");
+			JSONObject condition = new JSONObject();
+			{
+				condition.put("broadcaster_user_id", "403234476");
+			}
+			subscription.put("condition", condition);
+			JSONObject transport = new JSONObject();
+			{
+				transport.put("method", "webhook");
+				transport.put("callback", "https://alexus-twitchbot.herokuapp.com/daxtionoff/callback");
+			}
+			subscription.put("transport", transport);
+			subscription.put("created_at", "2021-12-20T19:47:53.497632801Z");
+			subscription.put("cost", "0");
+		}
+		object.put("subscription", subscription);
+		JSONObject event = new JSONObject();
+		{
+			event.put("broadcaster_user_id", "403234476");
+			event.put("broadcaster_user_login", "daxtionoff");
+			event.put("broadcaster_user_name", "daxtionoff");
+			event.put("id", "0eea09f7-5b03-45c9-9fe1-033b61a0ab32");
+			event.put("user_id", "403234476");//The stream type. Valid values are: live, playlist, watch_party, premiere, rerun.
+			event.put("user_login", "daxtionoff");
+			event.put("user_name", "daxtionoff");
+			event.put("user_input", "");
+			event.put("status", "fulfilled");
+			event.put("redeemed_at", "2021-12-21T11:13:48.045286708Z");
+			JSONObject reward = new JSONObject();
+			{
+				reward.put("id", "044a7ea1-8e62-476d-b58a-30b215a778cd");
+				reward.put("title", "Купить багикоины (В РАЗРАБОТКЕ)");
+				reward.put("prompt", "НЕ ПОКУПАТЬ! НЕ РАБОТАЕТ. ВЫ ПРОСТО ПОТЕРЯЕТЕ БАЛЛЫ");
+				reward.put("cost", "1");
+			}
+			event.put("reward", reward);
+		}
+		object.put("event", event);
+
+		String body = object.toString();
+
+		HashMap<String, String> headers = new HashMap<>();
+		headers.put("Client-Id", Globals.twitchClientId);
+		String messageTimestamp = "2021-12-20T19:51:30.844236831Z";
+		headers.put("Twitch-eventsub-message-timestamp", messageTimestamp);
+		headers.put("Twitch-eventsub-message-type", "notification");
+		headers.put("Twitch-eventsub-subscription-type", type);
+		headers.put("Content-type", "application/json");
+		headers.put("Authorization", "Bearer "+Globals.appAccessToken.getToken());
+
+		String messageId = Utils.generateSecret();
+		headers.put("Twitch-eventsub-message-signature", "sha256="+ Utils.hmacSha256(messageId+messageTimestamp+body, secret));
+		headers.put("Twitch-eventsub-message-id", messageId);
+		try {
+			sendPost("http://localhost/daxtionoff/callback", headers, body);
+			//System.out.println(result);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+
 	}
 
 	public void startWeb(){
@@ -187,10 +276,10 @@ public class Web {
 			}catch (Exception e){
 
 			}
-			//String response = "This is the response "+code;
-			t.sendResponseHeaders(200, 0/*response.length()*/);
+			String response = "This is the response ";
+			t.sendResponseHeaders(200, response.length());
 			OutputStream os = t.getResponseBody();
-			//os.write(response.getBytes());
+			os.write(response.getBytes());
 			os.close();
 		}
 	}

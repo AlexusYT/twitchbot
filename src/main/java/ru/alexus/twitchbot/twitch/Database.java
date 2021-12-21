@@ -1,6 +1,7 @@
 package ru.alexus.twitchbot.twitch;
 
 import org.jetbrains.annotations.NotNull;
+import ru.alexus.twitchbot.Globals;
 
 import java.sql.*;
 
@@ -70,6 +71,7 @@ public class Database {
 				return null;
 			}
 		}catch (Exception e){
+			Globals.log.error("Failed to execute query");
 			e.printStackTrace();
 			return null;
 		}

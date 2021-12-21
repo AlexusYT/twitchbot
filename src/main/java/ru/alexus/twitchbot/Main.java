@@ -25,14 +25,18 @@ import ru.alexus.twitchbot.twitch.Twitch;
 import ru.alexus.twitchbot.web.Web;
 
 import java.io.IOException;
+import java.time.Year;
 import java.util.concurrent.TimeUnit;
 
 
 public class Main {
 
 	public static void main(String[] args) throws Exception {
-
 		Utils.init();
+		if(Utils.isWebHost())
+			System.out.println("Running on hosting");
+		else
+			System.out.println("Running on local");
 
 		final Database botDatabase = new Database(Globals.databaseUrl, "botDB", Globals.databaseLogin, Globals.databasePass);
 
@@ -60,7 +64,15 @@ public class Main {
 		Twitch twitch = new Twitch(botDatabase);
 		twitchBot.setBotEvents(twitch);
 		Runtime.getRuntime().addShutdownHook(new Thread(twitchBot::stopBot));
-		twitchBot.connectToTwitch();
+		do {
+			try {
+				twitchBot.connectToTwitch();
+				break;
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+			TimeUnit.SECONDS.sleep(2);
+		}while (true);
 		twitchBot.startLoop();
 		new Thread(() -> {
 			while (true) {
@@ -77,10 +89,6 @@ public class Main {
 		web.start();
 		web.unsubscribeAllEvents();
 		web.subscribeChannelsEvents();
-		if(!Utils.isWebHost())
-		ChannelOld.initRoomState();
-		/*Thread webThread = new Thread(Web::startWeb);
-		webThread.start();*/
 	}
 
 }

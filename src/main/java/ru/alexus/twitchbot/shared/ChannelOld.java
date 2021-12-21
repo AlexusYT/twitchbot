@@ -59,41 +59,7 @@ public class ChannelOld {
 
 	}
 
-	public static void initRoomState(){
 
-		String secret = "ae7514603bed265d9de55bc5b092dd71dd6b1bdc42131bbd7be3d80d8390cc";
-
-		EventSubInfo eventSubInfo = new EventSubInfo("", "channel.ban", "1", "https://alexus-twitchbot.herokuapp.com/alexus_xx/callback", secret);
-		eventSubInfo.setStatus("webhook_callback_verification");
-
-		String body = "{\"subscription\":{\"id\":\"1aec1360-741a-4abe-bad7-d59e14a7ee27\",\"status\":\"webhook_callback_verification_pending\",\"type\":\"channel.ban\",\"version\":\"1\",\"condition\":{\"broadcaster_user_id\":\"134945794\"},\"transport\":{\"method\":\"webhook\",\"callback\":\"https://alexus-twitchbot.herokuapp.com/alexus_xx/callback\"},\"created_at\":\"2021-12-15T13:02:27.704816431Z\",\"cost\":0},\"challenge\":\"cVLoQh4IRXLKBopxhiHYXn7mohbv1ZiTW_LBx8HaUY0\"}";
-
-		HashMap<String, String> headers = new HashMap<>();
-		headers.put("Client-Id", Globals.twitchClientId);
-		String messageTimestamp = "2021-12-15T13:02:27.710416989Z";
-		headers.put("Twitch-eventsub-message-timestamp", messageTimestamp);
-		headers.put("Twitch-eventsub-message-type", "webhook_callback_verification");
-		headers.put("Twitch-eventsub-subscription-type", "channel.ban");
-		headers.put("Content-type", "application/json");
-		headers.put("Authorization", "Bearer "+Globals.appAccessToken.getToken());
-
-		String messageId = "8f7cfd33-2109-4aea-97c3-633b432cec";
-		headers.put("Twitch-eventsub-message-signature", "sha256="+ Utils.hmacSha256(messageId+messageTimestamp+body, secret));
-		headers.put("Twitch-eventsub-message-id", messageId);
-		try {
-			sendPost("http://localhost/alexus_xx/callback", headers, body);
-			//System.out.println(result);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-
-
-			/*subscribeEvent("channel.ban", Map.of("broadcaster_user_id", String.valueOf(channelId)));
-			subscribeEvent("channel.unban", Map.of("broadcaster_user_id", String.valueOf(channelId)));
-			subscribeEvent("channel.channel_points_custom_reward_redemption.add", Map.of("broadcaster_user_id", String.valueOf(channelId)));*/
-
-
-	}
 
 
 }

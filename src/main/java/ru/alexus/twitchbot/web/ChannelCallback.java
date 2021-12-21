@@ -42,28 +42,20 @@ class ChannelCallback implements HttpHandler {
 	}
 
 	@Override
-	public void handle(HttpExchange t) throws IOException {
+	public void handle(HttpExchange exchange) throws IOException {
 		long lastTime = System.currentTimeMillis();
-		BufferedReader br = new BufferedReader(new InputStreamReader(t.getRequestBody()));
-		StringBuilder clientBody = new StringBuilder();
-		String line;
-		String __delim = "";
-		while ((line = br.readLine()) != null) {
-			clientBody.append(__delim).append(line);
-			__delim = "\n";
-		}
-		Headers requestHeaders = t.getRequestHeaders();
+		Headers requestHeaders = exchange.getRequestHeaders();
+		String clientBody = getRequestBody(exchange);
 
-		Globals.log.info("Method: "+t.getRequestMethod());
-		Globals.log.info("URI: "+t.getRequestURI().toString());
+
+		Globals.log.info("Method: "+exchange.getRequestMethod());
+		Globals.log.info("URI: "+exchange.getRequestURI().toString());
 		StringBuilder headers = new StringBuilder();
 		for(Map.Entry<String, List<String>> header : requestHeaders.entrySet()){
 			headers.append(header.getKey()).append(": ").append(header.getValue().get(0)).append("\n");
 		}
 		Globals.log.info("Headers: "+headers);
 		Globals.log.info("Body: "+clientBody);
-
-
 		String messageType = requestHeaders.getFirst("Twitch-Eventsub-Message-Type");
 		String messageId = requestHeaders.getFirst("Twitch-Eventsub-Message-Id");
 		String messageHMAC = requestHeaders.getFirst("Twitch-Eventsub-Message-Signature");
@@ -72,7 +64,7 @@ class ChannelCallback implements HttpHandler {
 		//String subscriptionVersion = requestHeaders.getFirst("Twitch-Eventsub-Subscription-Version");
 		if(messageHMAC==null||messageType==null||messageId==null||subscriptionType==null||messageTimestamp==null) {
 			Globals.log.error("One of important headers is null");
-			respond(t, 400);
+			respond(exchange, 400);
 			return;
 		}
 
@@ -80,31 +72,32 @@ class ChannelCallback implements HttpHandler {
 
 		if(subInfo==null) {
 			Globals.log.error("Event not found "+subscriptionType+" for channel "+channel.getName());
-			respond(t, 400);
+			respond(exchange, 400);
 			return;
 		}
 
 		if(!messageHMAC.equals("sha256="+Utils.hmacSha256(messageId+messageTimestamp+clientBody, subInfo.getSecret()))){
 			Globals.log.error("HMAC mismatch for event "+subscriptionType+" for channel "+channel.getName());
-			respond(t, 400);
+			Globals.log.error("Secret "+subInfo.getSecret());
+			respond(exchange, 400);
 			return;
 		}
 
 		if(ids.get(messageId)!=null){
 			Globals.log.error("Notification duplicate detected");
-			respond(t, 200);
+			respond(exchange, 200);
 			return;
 		}
 
 		JSONObject object;
 		try{
-			object = new JSONObject(clientBody.toString());
+			object = new JSONObject(clientBody);
 		}catch (Exception ignored){
 			object = new JSONObject();
 		}
 		switch (messageType) {
 			case "webhook_callback_verification":
-				respond(t, 200, object.optString("challenge", null));
+				respond(exchange, 200, object.optString("challenge", null));
 				break;
 			case "notification":
 				if (object.has("subscription") && object.has("event")) {
@@ -120,7 +113,7 @@ class ChannelCallback implements HttpHandler {
 						//else
 						//channel.subscriptionNotification(subInfo, eventObj);
 					}, channel.getName()+"/"+subInfo.getType()).start();
-					respond(t, 200);
+					respond(exchange, 200);
 				}
 				break;
 			case "revocation":
@@ -128,19 +121,19 @@ class ChannelCallback implements HttpHandler {
 					JSONObject subscription = object.getJSONObject("subscription");
 					subInfo.setStatus(subscription.getString("status"));
 					new Thread(() -> channel.subscriptionRevoked(subInfo), channel.getName()+"/"+subInfo.getType()).start();
-					respond(t, 200);
+					respond(exchange, 200);
 				}
 				break;
 			default:
-				respond(t, 401);
+				respond(exchange, 401);
 
 				break;
 		}
-		//channel.subscriptions.put(subscriptionType, subInfo);
+
 		ids.put(messageId, System.currentTimeMillis());
 		if(System.currentTimeMillis()-lastTime>5){
 
-			Globals.log.info(messageId+" "+(System.currentTimeMillis()-lastTime));
+			Globals.log.info("Message "+messageId+" took "+(System.currentTimeMillis()-lastTime));
 		}
 		if(System.currentTimeMillis()-last>1000){
 			System.out.println(packets+" p/s");
@@ -156,7 +149,6 @@ class ChannelCallback implements HttpHandler {
 	}
 
 	private void respond(@NonNull HttpExchange exchange, int code, String body){
-
 		try {
 			OutputStream os = exchange.getResponseBody();
 			if (body == null) {
@@ -169,7 +161,19 @@ class ChannelCallback implements HttpHandler {
 		}catch (Exception e){
 			Globals.log.error("Error occurred", e);
 		}
+	}
 
-
+	String getRequestBody(HttpExchange exchange){
+		StringBuilder clientBody = new StringBuilder();
+		try {
+			BufferedReader br = new BufferedReader(new InputStreamReader(exchange.getRequestBody()));
+			String line;
+			String __delim = "";
+			while ((line = br.readLine()) != null) {
+				clientBody.append(__delim).append(line);
+				__delim = "\n";
+			}
+		}catch (Exception ignored){}
+		return clientBody.toString();
 	}
 }
