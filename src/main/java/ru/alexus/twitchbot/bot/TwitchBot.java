@@ -165,7 +165,7 @@ public class TwitchBot {
 					}
 					TimeUnit.SECONDS.sleep(1);
 				} catch (InterruptedException | IOException e) {
-					e.printStackTrace();
+					//e.printStackTrace();
 				}
 			}
 		}).start();
