@@ -10,11 +10,13 @@ import ru.alexus.twitchbot.eventsub.EventSubInfo;
 import ru.alexus.twitchbot.eventsub.events.Event;
 import ru.alexus.twitchbot.eventsub.events.RedemptionAdd;
 import ru.alexus.twitchbot.eventsub.events.StreamOnline;
+import ru.alexus.twitchbot.eventsub.objects.Reward;
 import ru.alexus.twitchbot.twitch.commands.CommandInfo;
 import ru.alexus.twitchbot.twitch.commands.CommandManager;
 import ru.alexus.twitchbot.twitch.commands.CommandResult;
 import ru.alexus.twitchbot.web.IEventSub;
 
+import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashMap;
@@ -35,6 +37,7 @@ public class BotChannel implements IChannelEvents, IEventSub {
 
 	private TwitchChannel twitchChannel;
 	private final Twitch twitch;
+	private final TwitchBot streamerBot;
 	private final Database database;
 	private final String name;
 	private final String token;
@@ -60,6 +63,7 @@ public class BotChannel implements IChannelEvents, IEventSub {
 			if(obj instanceof String event) events.put(event, null);
 		}
 		database = new Database(Globals.databaseUrl, name+"_botDB", Globals.databaseLogin, Globals.databasePass);
+		streamerBot = new TwitchBot(this.name, this.token);
 	}
 
 	@Override
@@ -93,6 +97,7 @@ public class BotChannel implements IChannelEvents, IEventSub {
 	@Override
 	public void onBotChannelLeave(TwitchBot bot, TwitchChannel twitchChannel) {
 		saveData();
+		database.disconnect();
 		System.out.println("Bot left "+twitchChannel.getChannelName());
 	}
 
@@ -181,6 +186,9 @@ public class BotChannel implements IChannelEvents, IEventSub {
 	}
 
 
+	public void sendMessage(String message){
+		sendMessage(message, null, null);
+	}
 
 	public void sendMessage(String message, @Nullable TwitchMessage twitchMessage, @Nullable BotUser user){
 		if(user!=null) message = replaceVar("coins", Utils.pluralizeMessageCoin(user.getCoins()), message);
@@ -244,7 +252,7 @@ public class BotChannel implements IChannelEvents, IEventSub {
 		saveMsgCount();
 	}
 
-	public void saveUsers(){
+	public synchronized void saveUsers(){
 
 		/*
 		UPDATE table SET Col1 = CASE id
@@ -303,7 +311,7 @@ public class BotChannel implements IChannelEvents, IEventSub {
 
 
 
-	public boolean startSession() {
+	public synchronized boolean startSession() {
 		try {
 			ResultSet sessionSet = database.execute("SELECT getOrCreateSession()");
 			sessionSet.next();
@@ -356,7 +364,7 @@ public class BotChannel implements IChannelEvents, IEventSub {
 			return false;
 		}
 	}
-	public boolean endSession() {
+	public synchronized boolean endSession() {
 		try {
 			saveData();
 			database.execute("UPDATE sessions SET endDate = CURRENT_TIMESTAMP, ended = 1 WHERE sessions.id = ?", sessionId);
@@ -417,10 +425,63 @@ public class BotChannel implements IChannelEvents, IEventSub {
 
 
 	@Override
-	public void onRewardRedemption(EventSubInfo subInfo, RedemptionAdd redemptionAdd) {
+	public void onRewardRedemption(EventSubInfo subInfo, RedemptionAdd event) {
 
-		System.out.println("Reward "+redemptionAdd.getReward().getTitle()+" redeemed");
-		System.out.println("Reward "+redemptionAdd.getReward().getId()+" redeemed");
+		Reward reward = event.getReward();
+		if(reward.getId().equals("044a7ea1-8e62-476d-b58a-30b215a778cd")){//buy coins
+			BotUser user = getUserById(event.getUserId());
+			if(user==null){
+				if(!database.isConnected()){
+					twitch.addChannel(event.getBroadcasterLogin(), this);
+					while (!database.isConnected()){
+						try {
+							TimeUnit.MILLISECONDS.sleep(50);
+						} catch (InterruptedException ignored) {}
+					}
+				}
+
+				try {
+					ResultSet set = database.execute("SELECT * FROM users WHERE twitchID = ?", event.getUserId());
+					set.next();
+					user = new BotUser(null, set);
+				}catch (Exception e){
+					user = new BotUser(new TwitchUser(event.getUserName(), event.getUserId()), null);
+					Globals.log.error("Failed to get user info", e);
+				}
+
+			}
+
+			user.addCoins(1000);
+			this.sendMessage(user.getDisplayName() + " купил 500 коинов за " + Utils.pluralizeMessagePoints(reward.getCost()) + " канала");
+			String sql = "UPDATE users SET buggycoins = ? WHERE users.twitchID = ?";
+			database.execute(sql, user.getCoins(), event.getUserId());
+			if(!enabled){
+				twitch.leaveChannel(event.getBroadcasterLogin());
+			}
+		}else if(reward.getId().equals("188bcad5-82a8-4d19-a184-0c45bd5b0014")){//vip
+			if(event.getUserLogin().equals(event.getBroadcasterLogin())) return;
+			try {
+				streamerBot.startLoop();
+				streamerBot.addChannel(this.name, new IChannelEvents() {
+					@Override
+					public void onBotChannelJoin(TwitchBot bot, TwitchChannel twitchChannel) {
+						twitchChannel.sendMessage("/vip "+event.getUserLogin());
+						bot.leaveChannel(twitchChannel.getChannelName());
+						bot.stopBot();
+					}
+
+
+					@Override
+					public void onMessage(TwitchBot bot, TwitchChannel twitchChannel, TwitchUser user, TwitchMessage message) {
+						System.out.println(message);
+					}
+				});
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		System.out.println("Reward "+reward.getTitle()+" redeemed");
+		System.out.println("Reward "+reward.getId()+" redeemed");
 	}
 
 	@Override
@@ -429,17 +490,17 @@ public class BotChannel implements IChannelEvents, IEventSub {
 	}
 
 	@Override
-	public void onStreamOnline(EventSubInfo subInfo, StreamOnline streamOnline) {
+	public void onStreamOnline(EventSubInfo subInfo, StreamOnline event) {
 		Globals.log.info("Stream "+this+" online");
 		if(!this.activated) return;
 		if(!finishingStream){
 			Globals.log.info("Notifying "+this+" users");
 		}
 		finishingStream = false;
-		String type = streamOnline.getType();
+		String type = event.getType();
 		if(type.equals("live")){
 			if(!this.enabled){
-				twitch.addChannel(streamOnline.getBroadcasterLogin(), this);
+				twitch.addChannel(event.getBroadcasterLogin(), this);
 				enableAfterJoin=true;
 			}
 		}
@@ -453,12 +514,15 @@ public class BotChannel implements IChannelEvents, IEventSub {
 		finishingStream = true;
 		long lastTime = System.currentTimeMillis();
 		while (finishingStream){
-			if(lastTime+10*60*1000<System.currentTimeMillis()) {
+			if(lastTime+5*60*1000<System.currentTimeMillis()) {
 				Globals.log.info("Stream still offline. Finishing "+this+" session");
 				if(!this.isActivated()) continue;
 				Globals.log.info("Saving data for channel "+this);
 				this.saveData();
 				if(!this.isEnabled()) continue;
+				if(endSession()) Globals.log.info("Session ended for "+this);
+				else  Globals.log.error("Failed to end session for "+this);
+
 				this.sendMessage(this.getByeMsg(), null, null);
 				twitch.leaveChannel(event.getBroadcasterLogin());
 				break;

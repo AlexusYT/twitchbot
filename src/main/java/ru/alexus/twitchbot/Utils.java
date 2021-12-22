@@ -12,6 +12,7 @@ import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
 public class Utils {
@@ -138,9 +139,11 @@ public class Utils {
 				http.setRequestProperty(header.getKey(), header.getValue());
 			}
 		}
-		final DataOutputStream out = new DataOutputStream(http.getOutputStream());
-		out.writeBytes(data);
-		out.close();
+		System.out.println(data);
+
+		BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(http.getOutputStream()));
+		writer.write(data);
+		writer.close();
 
 		StringBuilder builder = new StringBuilder();
 		try {
@@ -199,6 +202,8 @@ public class Utils {
 
 		return http.getResponseCode();
 	}
+
+
 	public static String generateSecret() {
 		StringBuilder secret = new StringBuilder();
 		for (int i = 0; i < random.nextInt(60, 90); i++) {

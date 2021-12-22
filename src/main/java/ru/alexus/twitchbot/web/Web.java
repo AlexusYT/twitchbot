@@ -167,14 +167,14 @@ public class Web {
 			event.put("broadcaster_user_name", "daxtionoff");
 			event.put("id", "0eea09f7-5b03-45c9-9fe1-033b61a0ab32");
 			event.put("user_id", "403234476");//The stream type. Valid values are: live, playlist, watch_party, premiere, rerun.
-			event.put("user_login", "daxtionoff");
+			event.put("user_login", "alexus_xx");
 			event.put("user_name", "daxtionoff");
 			event.put("user_input", "");
 			event.put("status", "fulfilled");
 			event.put("redeemed_at", "2021-12-21T11:13:48.045286708Z");
 			JSONObject reward = new JSONObject();
 			{
-				reward.put("id", "044a7ea1-8e62-476d-b58a-30b215a778cd");
+				reward.put("id", "188bcad5-82a8-4d19-a184-0c45bd5b0014");
 				reward.put("title", "Купить багикоины (В РАЗРАБОТКЕ)");
 				reward.put("prompt", "НЕ ПОКУПАТЬ! НЕ РАБОТАЕТ. ВЫ ПРОСТО ПОТЕРЯЕТЕ БАЛЛЫ");
 				reward.put("cost", "1");

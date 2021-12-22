@@ -34,6 +34,14 @@ public class Database {
 		DriverManager.setLoginTimeout(5);
 		dbConnection = DriverManager.getConnection(address+dbname, login, pass);
 	}
+	public void disconnect() {
+		try {
+			dbConnection.close();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		dbConnection=null;
+	}
 
 	public boolean isConnected(){
 		return dbConnection!=null;

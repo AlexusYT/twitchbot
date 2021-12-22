@@ -75,10 +75,9 @@ class ChannelCallback implements HttpHandler {
 			respond(exchange, 400);
 			return;
 		}
-
-		if(!messageHMAC.equals("sha256="+Utils.hmacSha256(messageId+messageTimestamp+clientBody, subInfo.getSecret()))){
+		String hmac = Utils.hmacSha256(messageId+messageTimestamp+clientBody, subInfo.getSecret());
+		if(!messageHMAC.equals("sha256="+hmac)){
 			Globals.log.error("HMAC mismatch for event "+subscriptionType+" for channel "+channel.getName());
-			Globals.log.error("Secret "+subInfo.getSecret());
 			respond(exchange, 400);
 			return;
 		}

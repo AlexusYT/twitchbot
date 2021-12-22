@@ -8,11 +8,11 @@ import ru.alexus.twitchbot.eventsub.events.StreamOnline;
 public interface IEventSub {
 
 
-	void onRewardRedemption(EventSubInfo subInfo, RedemptionAdd redemptionAdd);
+	void onRewardRedemption(EventSubInfo subInfo, RedemptionAdd event);
 
 	void subscriptionRevoked(EventSubInfo subInfo);
 
-	void onStreamOnline(EventSubInfo subInfo, StreamOnline streamOnline);
+	void onStreamOnline(EventSubInfo subInfo, StreamOnline event);
 
 	void onStreamOffline(EventSubInfo subInfo, Event event);
 }
