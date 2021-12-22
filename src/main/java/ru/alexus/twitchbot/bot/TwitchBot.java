@@ -163,9 +163,13 @@ public class TwitchBot {
 						output.flush();
 						sentChannels.put(channelName, channel);
 					}
-					TimeUnit.SECONDS.sleep(1);
-				} catch (InterruptedException | IOException e) {
+				} catch (IOException e) {
 					//e.printStackTrace();
+				}
+				try {
+					TimeUnit.SECONDS.sleep(1);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
 				}
 			}
 		}).start();
