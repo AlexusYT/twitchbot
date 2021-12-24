@@ -2,16 +2,12 @@ package ru.alexus.twitchbot.shared;
 
 import org.json.JSONObject;
 import ru.alexus.twitchbot.Globals;
-import ru.alexus.twitchbot.Utils;
 import ru.alexus.twitchbot.eventsub.EventSubInfo;
 import ru.alexus.twitchbot.eventsub.TwitchEventSubAPI;
-import ru.alexus.twitchbot.eventsub.events.RedemptionAdd;
+import ru.alexus.twitchbot.eventsub.events.RewardRedemption;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-
-import static ru.alexus.twitchbot.Utils.sendPost;
 
 public class ChannelOld {
 	private int channelId;
@@ -46,7 +42,7 @@ public class ChannelOld {
 
 		//Twitch.sendMsg(subInfo.getType(), this);
 	}
-	public void onRewardRedemption(EventSubInfo subInfo, RedemptionAdd event){
+	public void onRewardRedemption(EventSubInfo subInfo, RewardRedemption event){
 		/*UserOld user = this.getUserById(event.getUserId());
 		Reward reward = event.getReward();
 		Globals.log.info("User "+user.getDisplayName()+" redeemed reward "+reward+" in "+channelName);

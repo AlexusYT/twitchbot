@@ -1,6 +1,8 @@
 package ru.alexus.twitchbot;
 
-import org.apache.commons.lang3.text.WordUtils;
+import org.apache.commons.text.WordUtils;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import ru.alexus.twitchbot.langTypos.LangTypos_v2;
 import ru.alexus.twitchbot.twitch.Profiler;
 import ru.alexus.twitchbot.twitch.WordCases;
@@ -83,10 +85,10 @@ public class Utils {
 		else return value+" "+other;
 
 	}
-	public static String pluralizeMessageCoin(int value){
+	public static String pluralizeCoin(int value){
 		return Utils.pluralizeMessage(value, "коин", "коина", "коинов");
 	}
-	public static String pluralizeMessagePoints(int value){
+	public static String pluralizePoints(int value){
 		return Utils.pluralizeMessage(value, "балл", "балла", "баллов");
 	}
 
@@ -129,78 +131,72 @@ public class Utils {
 			return "";
 		}
 	}
-	public static String sendPost(String address, HashMap<String, String> headers, String data) throws IOException {
-		HttpURLConnection http = (HttpURLConnection) new URL(address).openConnection();
-		http.setRequestMethod("POST");
 
-		http.setDoOutput(true);
-		if(headers!=null) {
-			for (Map.Entry<String, String> header : headers.entrySet()) {
-				http.setRequestProperty(header.getKey(), header.getValue());
-			}
+	public static String sendPatch(String address, @NotNull HashMap<String, String> headers, @NotNull Map<String, String> query, @NotNull String body) throws IOException {
+		return send("POST", address, headers, query, body);
+	}
+	public static String sendPost(String address, @Nullable HashMap<String, String> headers, @NotNull HashMap<String, String> body) throws IOException {
+		StringBuilder queryString = new StringBuilder();
+		String delim = "";
+		for (var entry : body.entrySet()) {
+			queryString.append(delim).append(entry.getKey()).append("=").append(entry.getValue());
+			delim = "&";
 		}
-		System.out.println(data);
 
-		BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(http.getOutputStream()));
-		writer.write(data);
-		writer.close();
-
-		StringBuilder builder = new StringBuilder();
-		try {
-			BufferedReader br = new BufferedReader(new InputStreamReader(http.getInputStream()));
-			String line;
-			while ((line = br.readLine()) != null) {
-				builder.append(line).append("\n");
-			}
-		}catch (Exception e){
-
-			BufferedReader br = new BufferedReader(new InputStreamReader(http.getErrorStream()));
-			String line;
-			while ((line = br.readLine()) != null) {
-				builder.append(line).append("\n");
-			}
-		}
-		return builder.toString();
+		return send("POST", address, headers, null, queryString.toString());
+	}
+	public static String sendPost(String address, @Nullable HashMap<String, String> headers, @NotNull String body) throws IOException {
+		return send("POST", address, headers, null, body);
 	}
 
-	public static String sendGet(String address, HashMap<String, String> headers, String data) throws IOException {
-		HttpURLConnection http = (HttpURLConnection) new URL(address+"?"+data).openConnection();
-		http.setRequestMethod("GET");
+	public static int sendDelete(String address, @Nullable HashMap<String, String> headers, @Nullable Map<String, String> query) throws IOException {
+		return Integer.parseInt(send("DELETE", address, headers, query, null));
+	}
+
+	public static String sendGet(String address, @Nullable HashMap<String, String> headers, @Nullable Map<String, String> query) throws IOException {
+		return send("GET", address, headers, query, null);
+	}
+
+	public static String send(String method, String address, @Nullable HashMap<String, String> headers, @Nullable Map<String, String> query, @Nullable String body) throws IOException {
+		StringBuilder queryString = new StringBuilder();
+		if(query!=null) {
+			queryString.append("?");
+			String delim = "";
+			for (var entry : query.entrySet()) {
+				queryString.append(delim).append(entry.getKey()).append("=").append(entry.getValue());
+				delim = "&";
+			}
+		}
+		method = method.toUpperCase(Locale.ROOT);
+		HttpURLConnection http = (HttpURLConnection) new URL(address+queryString).openConnection();
+		http.setRequestMethod(method);
 
 		if(headers!=null) {
 			for (Map.Entry<String, String> header : headers.entrySet()) {
 				http.setRequestProperty(header.getKey(), header.getValue());
 			}
 		}
-
-		StringBuilder builder = new StringBuilder();
+		if(body!=null) {
+			http.setDoOutput(true);
+			BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(http.getOutputStream()));
+			writer.write(body);
+			writer.close();
+		}
+		if(method.equals("DELETE")) return String.valueOf(http.getResponseCode());
+		BufferedReader br;
 		try {
-			BufferedReader br = new BufferedReader(new InputStreamReader(http.getInputStream()));
-			String line;
-			while ((line = br.readLine()) != null) {
-				builder.append(line).append("\n");
-			}
-		}catch (Exception e){
-
-			BufferedReader br = new BufferedReader(new InputStreamReader(http.getErrorStream()));
-			String line;
-			while ((line = br.readLine()) != null) {
-				builder.append(line).append("\n");
-			}
+			br = new BufferedReader(new InputStreamReader(http.getInputStream()));
+		} catch (Exception e) {
+			br = new BufferedReader(new InputStreamReader(http.getErrorStream()));
+		}
+		StringBuilder builder = new StringBuilder();
+		String line;
+		while ((line = br.readLine()) != null) {
+			builder.append(line).append("\n");
 		}
 		return builder.toString();
-	}
-	public static int sendDelete(String address, HashMap<String, String> headers, String data) throws IOException {
-		HttpURLConnection http = (HttpURLConnection) new URL(address+"?"+data).openConnection();
-		http.setRequestMethod("DELETE");
 
-		if(headers!=null) {
-			for (Map.Entry<String, String> header : headers.entrySet()) {
-				http.setRequestProperty(header.getKey(), header.getValue());
-			}
-		}
 
-		return http.getResponseCode();
 	}
 
 

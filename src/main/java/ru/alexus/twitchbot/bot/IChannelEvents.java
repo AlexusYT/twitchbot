@@ -11,6 +11,7 @@ public interface IChannelEvents {
 	default void onUserLeft(TwitchBot bot, TwitchChannel twitchChannel, String user){}
 
 	default void onMessage(TwitchBot bot, TwitchChannel twitchChannel, TwitchUser user, TwitchMessage message){}
+	default void onNotice(TwitchBot bot, TwitchChannel twitchChannel, String msgId, String msgText){}
 	default String onSendingMessage(TwitchBot bot, TwitchChannel twitchChannel, String message){
 		return message;
 	}

@@ -71,6 +71,22 @@ public class TwitchBot {
 		else this.botOauth="oauth:"+botOauth;
 	}
 
+	public boolean connectToTwitch(int maxTries){
+		int tries = 0;
+		do {
+			try {
+				connectToTwitch();
+				return true;
+			} catch (IOException e) {
+				try {
+					TimeUnit.SECONDS.sleep(1);
+				} catch (InterruptedException ignored) {}
+				tries++;
+			}
+		}while (tries<maxTries||maxTries<=0);
+		return false;
+	}
+
 	public void connectToTwitch() throws IOException {
 		do {
 			lastPingTime = -1;
@@ -145,7 +161,7 @@ public class TwitchBot {
 		}
 	}
 
-	public void startLoop() throws IOException {
+	public void startLoop() {
 		new Thread(() -> {
 
 			while (!botStop){
@@ -179,6 +195,7 @@ public class TwitchBot {
 				try {
 					String line;
 					while ((line = input.readLine()) != null) {
+						if(printOut) System.out.println(botUsername+": "+line);
 						String[] elements = line.split(" ", 5);
 						if (elements[0].equals("PING")) {
 							lastPingTime = System.currentTimeMillis();
@@ -238,16 +255,19 @@ public class TwitchBot {
 								if (channel == null) continue;
 								TwitchMessage message = new TwitchMessage(elements[0].substring(1), elements[4].substring(1));
 								new Thread(() -> checkExceedLimit(() -> channel.listener.onMessage(this, channel, message.getTwitchUser(), message))).start();
-
+							}
+							case "NOTICE" -> {
+								String channelName = elements[3].substring(1);
+								TwitchChannel channel = joinedChannels.get(channelName);
+								if (channel == null) continue;
+								new Thread(() -> checkExceedLimit(() -> channel.listener.onNotice(this, channel, elements[0].substring(8), elements[4].substring(1)))).start();
 							}
 							case "WHISPER" -> {
 								if(botEvents==null) continue;
 								TwitchWhisper whisper = new TwitchWhisper(elements[0].substring(1), elements[4].substring(1));
 								new Thread(() -> checkExceedLimit(() -> botEvents.onWhisper(this, whisper.getTwitchUser(), whisper))).start();
-
 							}
 							default -> {
-								if(printOut) System.out.println(line);
 							}
 						}
 

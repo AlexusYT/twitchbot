@@ -6,7 +6,6 @@ import ru.alexus.twitchbot.twitch.BotChannel;
 import ru.alexus.twitchbot.twitch.BotUser;
 import ru.alexus.twitchbot.twitch.commands.CommandInfo;
 import ru.alexus.twitchbot.twitch.commands.CommandResult;
-import ru.alexus.twitchbot.twitch.commands.EnumAccessLevel;
 import ru.alexus.twitchbot.twitch.commands.SubCommandInfo;
 
 public class CoinsCheckCmd extends SubCommandInfo {
@@ -26,7 +25,7 @@ public class CoinsCheckCmd extends SubCommandInfo {
 		result = caller.checkSufficientCoins(commandInfo);
 		if(!result.sufficientCoins) return result;
 
-		result.resultMessage = "{.caller}, у пользователя "+targetUser.getDisplayName()+" "+ Utils.pluralizeMessageCoin(targetUser.getCoins());
+		result.resultMessage = "{.caller}, у пользователя "+targetUser.getDisplayName()+" "+ Utils.pluralizeCoin(targetUser.getCoins());
 
 		return result;
 	}

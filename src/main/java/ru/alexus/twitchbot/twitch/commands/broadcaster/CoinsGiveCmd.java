@@ -28,7 +28,7 @@ public class CoinsGiveCmd extends SubCommandInfo {
 			return result;
 		}
 		targetUser.addCoins(sum);
-		result.resultMessage = "{.caller}, коины успешно выданы "+targetUser.getDisplayName()+". Теперь у него "+ Utils.pluralizeMessageCoin(targetUser.getCoins());
+		result.resultMessage = "{.caller}, коины успешно выданы "+targetUser.getDisplayName()+". Теперь у него "+ Utils.pluralizeCoin(targetUser.getCoins());
 		return result;
 	}
 

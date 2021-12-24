@@ -9,9 +9,8 @@ import ru.alexus.twitchbot.Globals;
 import ru.alexus.twitchbot.Utils;
 import ru.alexus.twitchbot.eventsub.EventSubInfo;
 import ru.alexus.twitchbot.eventsub.events.Event;
-import ru.alexus.twitchbot.eventsub.events.RedemptionAdd;
+import ru.alexus.twitchbot.eventsub.events.RewardRedemption;
 import ru.alexus.twitchbot.eventsub.events.StreamOnline;
-import ru.alexus.twitchbot.shared.ChannelOld;
 import ru.alexus.twitchbot.twitch.BotChannel;
 
 import java.io.*;
@@ -105,7 +104,7 @@ class ChannelCallback implements HttpHandler {
 					subInfo.setStatus(subscription.getString("status"));
 					new Thread(() ->{
 						switch (subInfo.getType()) {
-							case "channel.channel_points_custom_reward_redemption.add" -> channel.onRewardRedemption(subInfo, new RedemptionAdd(eventObj));
+							case "channel.channel_points_custom_reward_redemption.add" -> channel.onRewardRedemption(subInfo, new RewardRedemption(eventObj));
 							case "stream.online" -> channel.onStreamOnline(subInfo, new StreamOnline(eventObj));
 							case "stream.offline" -> channel.onStreamOffline(subInfo, new Event(eventObj));
 						}

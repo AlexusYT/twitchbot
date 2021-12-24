@@ -2,13 +2,13 @@ package ru.alexus.twitchbot.web;
 
 import ru.alexus.twitchbot.eventsub.EventSubInfo;
 import ru.alexus.twitchbot.eventsub.events.Event;
-import ru.alexus.twitchbot.eventsub.events.RedemptionAdd;
+import ru.alexus.twitchbot.eventsub.events.RewardRedemption;
 import ru.alexus.twitchbot.eventsub.events.StreamOnline;
 
 public interface IEventSub {
 
 
-	void onRewardRedemption(EventSubInfo subInfo, RedemptionAdd event);
+	void onRewardRedemption(EventSubInfo subInfo, RewardRedemption event);
 
 	void subscriptionRevoked(EventSubInfo subInfo);
 

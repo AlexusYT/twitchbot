@@ -16,28 +16,28 @@ public interface IBotEvents {
 	 * Called when bot throws any exception. Then bot calls onBotConnectionRetryStarted
 	 * @param throwable thrown exception
 	 */
-	void onBotConnectionFailure(TwitchBot bot, Throwable throwable);
+	default void onBotConnectionFailure(TwitchBot bot, Throwable throwable){}
 
 	/**
 	 * Called when bot successfully connected to twitch
 	 */
-	void onBotConnectionSuccessful(TwitchBot bot);
+	default void onBotConnectionSuccessful(TwitchBot bot){}
 
 	/**
 	 * Called when bot about to finish execution
 	 */
-	void onBotStopping(TwitchBot bot);
+	default void onBotStopping(TwitchBot bot){}
 
 	/**
 	 * Called when bot finished execution
 	 */
-	void onBotStopped(TwitchBot bot);
+	default void onBotStopped(TwitchBot bot){}
 
 	/**
 	 * Called when bot trying to reconnect
 	 * @return true if bot should reconnect, false otherwise
 	 */
 	default boolean onBotConnectionRetryStarted(TwitchBot bot) {
-		return false;
+		return true;
 	}
 }

@@ -6,11 +6,9 @@ import org.json.JSONObject;
 import org.springframework.lang.NonNull;
 import ru.alexus.twitchbot.Globals;
 import ru.alexus.twitchbot.Utils;
+import ru.alexus.twitchbot.eventsub.events.RewardRedemption;
 
-import java.awt.*;
 import java.io.IOException;
-import java.net.StandardSocketOptions;
-import java.net.URI;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
@@ -25,11 +23,13 @@ public class TwitchEventSubAPI {
 			scopesString.append(delim).append(scope);
 			delim="%20";
 		}
+		HashMap<String, String> body = new HashMap<>();
+		body.put("client_id", Globals.twitchClientId);
+		body.put("client_secret", Globals.twitchSecret);
+		body.put("grant_type", "client_credentials");
+		body.put("scope", scopesString.toString());
 
-		JSONObject root = new JSONObject(Utils.sendPost("https://id.twitch.tv/oauth2/token", null, "client_id="+ Globals.twitchClientId +
-				"&client_secret="+Globals.twitchSecret +
-				"&grant_type=client_credentials" +
-				"&scope="+scopesString));
+		JSONObject root = new JSONObject(Utils.sendPost("https://id.twitch.tv/oauth2/token", null, body));
 		return new AppAccessToken(root);
 	}
 
@@ -82,18 +82,19 @@ public class TwitchEventSubAPI {
 	}
 
 	public static LinkedList<EventSubInfo> getSubscribedEvent(String filterByType, String page) throws IOException {
-		String body = "";
+
+		HashMap<String, String> query = new HashMap<>();
 		if(filterByType!=null){
-			body="type="+filterByType;
+			query.put("type", filterByType);
 		}
 		if(page!=null){
-			body="after="+page;
+			query.put("after", page);
 		}
 		HashMap<String, String> headers = new HashMap<>();
 		headers.put("Client-Id", Globals.twitchClientId);
 		headers.put("Content-type", "application/json");
 		headers.put("Authorization", "Bearer "+Globals.appAccessToken.getToken());
-		String respStr = Utils.sendGet("https://api.twitch.tv/helix/eventsub/subscriptions", headers, body);
+		String respStr = Utils.sendGet("https://api.twitch.tv/helix/eventsub/subscriptions", headers, query);
 		System.out.println(respStr);
 		JSONObject response = new JSONObject(respStr);
 		if(response.has("pagination"))
@@ -112,6 +113,28 @@ public class TwitchEventSubAPI {
 		headers.put("Content-type", "application/json");
 		headers.put("Authorization", "Bearer "+Globals.appAccessToken.getToken());
 
-		return Utils.sendDelete("https://api.twitch.tv/helix/eventsub/subscriptions", headers, "id="+event.getId());
+		return Utils.sendDelete("https://api.twitch.tv/helix/eventsub/subscriptions", headers, Map.of("id", event.getId()));
+	}
+
+
+	public static RewardRedemption updateRedemption(RewardRedemption redemption, RewardRedemption.EnumRedemptionStatus status) throws IOException {
+		if(redemption.getStatus()==status) return redemption;
+		JSONObject body = new JSONObject();
+		body.put("status", status);
+		HashMap<String, String> headers = new HashMap<>();
+		headers.put("Client-Id", Globals.twitchClientId);
+		headers.put("Content-type", "application/json");
+		headers.put("Authorization", "Bearer "+Globals.appAccessToken.getToken());
+		HashMap<String, String> query = new HashMap<>();
+		query.put("id", redemption.getId());
+		query.put("broadcaster_id", String.valueOf(redemption.getBroadcasterId()));
+		query.put("reward_id", redemption.getReward().getId());
+
+		String respStr = Utils.sendPatch("https://api.twitch.tv/helix/channel_points/custom_rewards/redemptions", headers, query, body.toString());
+		JSONObject response = new JSONObject(respStr);
+		if(response.has("error")){
+			throw new RuntimeException(redemption+": "+response.getString("error")+": "+response.getString("message"));
+		}
+		return new RewardRedemption(response.getJSONArray("data").getJSONObject(0));
 	}
 }

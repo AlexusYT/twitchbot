@@ -6,7 +6,6 @@ import ru.alexus.twitchbot.twitch.BotChannel;
 import ru.alexus.twitchbot.twitch.BotUser;
 import ru.alexus.twitchbot.twitch.commands.CommandInfo;
 import ru.alexus.twitchbot.twitch.commands.CommandResult;
-import ru.alexus.twitchbot.twitch.commands.EnumAccessLevel;
 import ru.alexus.twitchbot.twitch.commands.MainCommandInfo;
 
 import java.util.LinkedList;
@@ -50,10 +49,10 @@ public class CasinoCmd extends MainCommandInfo {
 		int resultBet = runRandom(bet);
 		caller.addCoins(resultBet);
 		result.resultMessage = "У {.caller} выпало ";
-		if(resultBet<0) result.resultMessage += "x0 и он потерял "+Utils.pluralizeMessageCoin(bet);
+		if(resultBet<0) result.resultMessage += "x0 и он потерял "+Utils.pluralizeCoin(bet);
 		else if(resultBet==0) result.resultMessage += "x1 и он вышел в 0";
-		else if(resultBet==bet*2) result.resultMessage += "x2 и он заработал "+Utils.pluralizeMessageCoin(bet);
-		else result.resultMessage += "x50 и он получил "+Utils.pluralizeMessageCoin(resultBet);
+		else if(resultBet==bet*2) result.resultMessage += "x2 и он заработал "+Utils.pluralizeCoin(bet);
+		else result.resultMessage += "x50 и он получил "+Utils.pluralizeCoin(resultBet);
 
 		return result;
 	}

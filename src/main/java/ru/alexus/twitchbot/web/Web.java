@@ -166,11 +166,11 @@ public class Web {
 			event.put("broadcaster_user_login", "daxtionoff");
 			event.put("broadcaster_user_name", "daxtionoff");
 			event.put("id", "0eea09f7-5b03-45c9-9fe1-033b61a0ab32");
-			event.put("user_id", "403234476");//The stream type. Valid values are: live, playlist, watch_party, premiere, rerun.
+			event.put("user_id", "134945794");//The stream type. Valid values are: live, playlist, watch_party, premiere, rerun.
 			event.put("user_login", "alexus_xx");
-			event.put("user_name", "daxtionoff");
+			event.put("user_name", "Alexus_XX");
 			event.put("user_input", "");
-			event.put("status", "fulfilled");
+			event.put("status", "unfulfilled");
 			event.put("redeemed_at", "2021-12-21T11:13:48.045286708Z");
 			JSONObject reward = new JSONObject();
 			{
@@ -273,7 +273,7 @@ public class Web {
 					Globals.log.error("Failed to get user token", e);
 				}
 
-			}catch (Exception e){
+			}catch (Exception ignored){
 
 			}
 			String response = "This is the response ";

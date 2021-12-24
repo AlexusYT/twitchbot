@@ -78,7 +78,7 @@ public class Main {
 			while (true) {
 				try {
 					TimeUnit.MINUTES.sleep(20);
-					if (Utils.isWebHost()) Utils.sendGet(Globals.serverAddress, null, "");
+					if (Utils.isWebHost()) Utils.sendGet(Globals.serverAddress, null, null);
 				} catch (IOException | InterruptedException ignored) {}
 			}
 		}, "Web host wake").start();

@@ -34,8 +34,7 @@ public class Reward {
 	@Override
 	public String toString() {
 		return "Reward{" +
-				"id='" + id + '\'' +
-				", title='" + title + '\'' +
+				"title='" + title + '\'' +
 				", cost=" + cost +
 				'}';
 	}

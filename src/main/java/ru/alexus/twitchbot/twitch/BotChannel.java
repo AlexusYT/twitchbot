@@ -8,7 +8,7 @@ import ru.alexus.twitchbot.Utils;
 import ru.alexus.twitchbot.bot.*;
 import ru.alexus.twitchbot.eventsub.EventSubInfo;
 import ru.alexus.twitchbot.eventsub.events.Event;
-import ru.alexus.twitchbot.eventsub.events.RedemptionAdd;
+import ru.alexus.twitchbot.eventsub.events.RewardRedemption;
 import ru.alexus.twitchbot.eventsub.events.StreamOnline;
 import ru.alexus.twitchbot.eventsub.objects.Reward;
 import ru.alexus.twitchbot.twitch.commands.CommandInfo;
@@ -191,7 +191,8 @@ public class BotChannel implements IChannelEvents, IEventSub {
 	}
 
 	public void sendMessage(String message, @Nullable TwitchMessage twitchMessage, @Nullable BotUser user){
-		if(user!=null) message = replaceVar("coins", Utils.pluralizeMessageCoin(user.getCoins()), message);
+		if(user!=null) message = replaceVar("coins", Utils.pluralizeCoin(user.getCoins()), message);
+		if(this.twitchChannel==null) return;
 		this.twitchChannel.sendMessage(message, twitchMessage);
 	}
 	public BotChannel getChannelByName(String name){
@@ -206,6 +207,7 @@ public class BotChannel implements IChannelEvents, IEventSub {
 		twitch.leaveChannel(name);
 	}
 	public void mute(TwitchUser user, int time, String reason){
+		if(this.twitchChannel==null) return;
 		twitchChannel.mute(user, time, reason);
 	}
 
@@ -425,60 +427,57 @@ public class BotChannel implements IChannelEvents, IEventSub {
 
 
 	@Override
-	public void onRewardRedemption(EventSubInfo subInfo, RedemptionAdd event) {
+	public void onRewardRedemption(EventSubInfo subInfo, RewardRedemption event) {
 
 		Reward reward = event.getReward();
 		if(reward.getId().equals("044a7ea1-8e62-476d-b58a-30b215a778cd")){//buy coins
 			BotUser user = getUserById(event.getUserId());
-			if(user==null){
-				if(!database.isConnected()){
-					twitch.addChannel(event.getBroadcasterLogin(), this);
-					while (!database.isConnected()){
-						try {
-							TimeUnit.MILLISECONDS.sleep(50);
-						} catch (InterruptedException ignored) {}
+			if(user==null) return;
+			int value = reward.getCost()/2;
+			for(String str : reward.getPrompt().split(" ")){
+				try{
+					value = Integer.parseInt(str);
+				}catch (Exception ignored){}
+			}
+			user.addCoins(value);
+			this.sendMessage(user.getDisplayName() + " купил "+Utils.pluralizeCoin(value)+" за " + Utils.pluralizePoints(reward.getCost()) + " канала");
+		}else if(reward.getId().equals("188bcad5-82a8-4d19-a184-0c45bd5b0014")) {//vip
+			if (event.getUserId() == twitchID) {
+				event.cancel();
+				sendMessage(event.getUserName() + ", стример не может быть ВИПом");
+				return;
+			}
+
+			if(!streamerBot.connectToTwitch(10)){
+				event.cancel();
+				sendMessage(event.getUserName() + ", произошла ошибка при выдаче VIP-статуса. Баллы должны вернуться через некоторое время");
+				return;
+			}
+			streamerBot.startLoop();
+			streamerBot.addChannel(this.name, new IChannelEvents() {
+				@Override
+				public void onNotice(TwitchBot bot, TwitchChannel twitchChannel, String msgId, String msgText) {
+					if (msgId.equals("vip_success")) {
+						event.fulfill();
+						sendMessage(event.getUserName() + ", держи свою випку");
+					} else if (msgId.equals("bad_vip_grantee_already_vip")) {
+						event.cancel();
+						sendMessage(event.getUserName() + ", у тебя уже есть VIP-статус");
 					}
+					System.out.println(msgId);
+					bot.leaveChannel(twitchChannel.getChannelName());
 				}
 
-				try {
-					ResultSet set = database.execute("SELECT * FROM users WHERE twitchID = ?", event.getUserId());
-					set.next();
-					user = new BotUser(null, set);
-				}catch (Exception e){
-					user = new BotUser(new TwitchUser(event.getUserName(), event.getUserId()), null);
-					Globals.log.error("Failed to get user info", e);
+				@Override
+				public void onBotChannelJoin(TwitchBot bot, TwitchChannel twitchChannel) {
+					twitchChannel.sendMessage("/vip " + event.getUserLogin());
 				}
 
-			}
-
-			user.addCoins(1000);
-			this.sendMessage(user.getDisplayName() + " купил 500 коинов за " + Utils.pluralizeMessagePoints(reward.getCost()) + " канала");
-			String sql = "UPDATE users SET buggycoins = ? WHERE users.twitchID = ?";
-			database.execute(sql, user.getCoins(), event.getUserId());
-			if(!enabled){
-				twitch.leaveChannel(event.getBroadcasterLogin());
-			}
-		}else if(reward.getId().equals("188bcad5-82a8-4d19-a184-0c45bd5b0014")){//vip
-			if(event.getUserLogin().equals(event.getBroadcasterLogin())) return;
-			try {
-				streamerBot.startLoop();
-				streamerBot.addChannel(this.name, new IChannelEvents() {
-					@Override
-					public void onBotChannelJoin(TwitchBot bot, TwitchChannel twitchChannel) {
-						twitchChannel.sendMessage("/vip "+event.getUserLogin());
-						bot.leaveChannel(twitchChannel.getChannelName());
-						bot.stopBot();
-					}
-
-
-					@Override
-					public void onMessage(TwitchBot bot, TwitchChannel twitchChannel, TwitchUser user, TwitchMessage message) {
-						System.out.println(message);
-					}
-				});
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
+				@Override
+				public void onBotChannelLeave(TwitchBot bot, TwitchChannel twitchChannel) {
+					bot.stopBot();
+				}
+			});
 		}
 		System.out.println("Reward "+reward.getTitle()+" redeemed");
 		System.out.println("Reward "+reward.getId()+" redeemed");

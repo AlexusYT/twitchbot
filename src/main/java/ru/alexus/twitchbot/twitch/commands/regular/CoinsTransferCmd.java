@@ -47,7 +47,7 @@ public class CoinsTransferCmd extends SubCommandInfo {
 		if(caller.isOwner()||caller.isBroadcaster()) com = 0.0;
 
 		targetUser.addCoins((int) (sum*(1-com)));
-		result.resultMessage = "{.caller}, коины успешно переведены "+targetUser.getDisplayName()+". Комиссия составила: "+Utils.pluralizeMessageCoin((int) (sum*com));
+		result.resultMessage = "{.caller}, коины успешно переведены "+targetUser.getDisplayName()+". Комиссия составила: "+Utils.pluralizeCoin((int) (sum*com));
 		return result;
 
 	}
