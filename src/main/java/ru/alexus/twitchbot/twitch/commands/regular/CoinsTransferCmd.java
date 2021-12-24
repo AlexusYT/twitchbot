@@ -4,8 +4,8 @@ import ru.alexus.twitchbot.Utils;
 import ru.alexus.twitchbot.bot.TwitchMessage;
 import ru.alexus.twitchbot.twitch.BotChannel;
 import ru.alexus.twitchbot.twitch.BotUser;
-import ru.alexus.twitchbot.twitch.commands.CommandInfo;
 import ru.alexus.twitchbot.twitch.CommonMessages;
+import ru.alexus.twitchbot.twitch.commands.CommandInfo;
 import ru.alexus.twitchbot.twitch.commands.CommandResult;
 import ru.alexus.twitchbot.twitch.commands.SubCommandInfo;
 
@@ -14,40 +14,40 @@ public class CoinsTransferCmd extends SubCommandInfo {
 
 	@Override
 	public CommandResult execute(CommandInfo command, String text, String[] args, TwitchMessage twitchMessage, BotChannel botChannel, BotUser caller, CommandResult result) {
-		if(args.length!=2) return super.execute(command, text, args, twitchMessage, botChannel, caller, result);
+		if (args.length != 2) return super.execute(command, text, args, twitchMessage, botChannel, caller, result);
 
 		BotUser targetUser = botChannel.getUserByName(args[0]);
-		if(targetUser!=null&&targetUser.getUserId()==caller.getUserId()) {
+		if (targetUser != null && targetUser.getUserId() == caller.getUserId()) {
 			result.resultMessage = "{.caller}, нельзя перевести коины самому себе";
 			return result;
 		}
-		if (targetUser == null){
+		if (targetUser == null) {
 			result.resultMessage = CommonMessages.userNotFound(args[0]);
 			return result;
 		}
 
 		int sum;
-		try{
+		try {
 			sum = Integer.parseInt(args[1]);
-			if(sum<10){
+			if (sum < 10) {
 				result.resultMessage = "{.caller}, сумма должна быть больше или равна 10 коинам";
 				return result;
 			}
-			if(caller.getCoins()<sum) {
+			if (caller.getCoins() < sum) {
 				result.resultMessage = CommonMessages.notEnoughCoins();
 				return result;
 			}
-		}catch (Exception ignored){
+		} catch (Exception ignored) {
 			result.resultMessage = "{.caller}, введи корректную сумму для перевода";
 			return result;
 		}
 		caller.removeCoins(sum);
 		double com = 0.2;
-		if(caller.isSubscriber()) com = 0.1;
-		if(caller.isOwner()||caller.isBroadcaster()) com = 0.0;
+		if (caller.isSubscriber()) com = 0.1;
+		if (caller.isOwner() || caller.isBroadcaster()) com = 0.0;
 
-		targetUser.addCoins((int) (sum*(1-com)));
-		result.resultMessage = "{.caller}, коины успешно переведены "+targetUser.getDisplayName()+". Комиссия составила: "+Utils.pluralizeCoin((int) (sum*com));
+		targetUser.addCoins((int) (sum * (1 - com)));
+		result.resultMessage = "{.caller}, коины успешно переведены " + targetUser.getDisplayName() + ". Комиссия составила: " + Utils.pluralizeCoin((int) (sum * com));
 		return result;
 
 	}

@@ -4,7 +4,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
 
 import static ru.alexus.twitchbot.Utils.replaceVar;
@@ -34,15 +33,15 @@ public class TwitchChannel {
 	}
 
 	public void setBotUser(@NotNull TwitchUser botUser) {
-		if(!botUser.isMod()&&!botUser.isVip()&&!botUser.isBroadcaster()) cooldown = 1000;
-		else cooldown = time/100*1000;
+		if (!botUser.isMod() && !botUser.isVip() && !botUser.isBroadcaster()) cooldown = 1000;
+		else cooldown = time / 100 * 1000;
 		this.botUser = botUser;
 	}
 
-	public void initRoom(@NotNull String str){
+	public void initRoom(@NotNull String str) {
 		for (String tag : str.split(";")) {
 			String[] tagElem = tag.split("=");
-			try{
+			try {
 				switch (tagElem[0]) {
 					case "emote-only" -> emoteOnly = tagElem[1].equals("1");
 					case "followers-only" -> followersOnly = Integer.parseInt(tagElem[1]);
@@ -53,27 +52,29 @@ public class TwitchChannel {
 					case "rituals" -> rituals = Integer.parseInt(tagElem[1]);
 					default -> System.out.println("Unknown channel tag: " + tag);
 				}
-			}catch (Exception ignored){}
+			} catch (Exception ignored) {
+			}
 		}
 	}
 
-	public void mute(TwitchUser user, int time, String reason){
-		sendMessage("/timeout "+user.getDisplayName()+" "+time+" "+reason);
+	public void mute(TwitchUser user, int time, String reason) {
+		sendMessage("/timeout " + user.getDisplayName() + " " + time + " " + reason);
 	}
 
-	public void sendMessage(String message, @Nullable TwitchMessage twitchMessage){
-		if(twitchMessage!=null)	message = replaceVar("caller", twitchMessage.getTwitchUser().getDisplayName(), message);
+	public void sendMessage(String message, @Nullable TwitchMessage twitchMessage) {
+		if (twitchMessage != null)
+			message = replaceVar("caller", twitchMessage.getTwitchUser().getDisplayName(), message);
 		sendMessage(message);
 	}
 
-	public void sendMessage(String message){
+	public void sendMessage(String message) {
 		try {
 			message = listener.onSendingMessage(bot, this, message);
-			if(message==null||message.isEmpty()) return;
-			while (System.currentTimeMillis()-lastSend<cooldown) {
+			if (message == null || message.isEmpty()) return;
+			while (System.currentTimeMillis() - lastSend < cooldown) {
 				TimeUnit.MILLISECONDS.sleep(50);
 			}
-			bot.sendToIRC("PRIVMSG #"+channelName+" :"+message);
+			bot.sendToIRC("PRIVMSG #" + channelName + " :" + message);
 			lastSend = System.currentTimeMillis();
 		} catch (IOException | InterruptedException e) {
 			e.printStackTrace();

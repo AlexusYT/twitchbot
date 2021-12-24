@@ -4,16 +4,16 @@ import org.json.JSONObject;
 import ru.alexus.twitchbot.eventsub.TwitchEventSubAPI;
 import ru.alexus.twitchbot.eventsub.objects.Reward;
 
-import java.io.IOException;
 import java.util.Locale;
 
-public class RewardRedemption extends Event{
+public class RewardRedemption extends Event {
 
-	public enum EnumRedemptionStatus{
+	public enum EnumRedemptionStatus {
 		UNFULFILLED,
 		FULFILLED,
 		CANCELED
 	}
+
 	private String id;
 	private int userId;
 	private String userLogin;
@@ -35,7 +35,7 @@ public class RewardRedemption extends Event{
 		this.redeemedAt = object.getString("redeemed_at");
 	}
 
-	private void copy(RewardRedemption redemption){
+	private void copy(RewardRedemption redemption) {
 		this.id = redemption.id;
 		this.userId = redemption.userId;
 		this.userLogin = redemption.userLogin;
@@ -78,8 +78,8 @@ public class RewardRedemption extends Event{
 		return redeemedAt;
 	}
 
-	public boolean cancel(){
-		if(status == EnumRedemptionStatus.CANCELED) return true;
+	public boolean cancel() {
+		if (status == EnumRedemptionStatus.CANCELED) return true;
 		try {
 			copy(TwitchEventSubAPI.updateRedemption(this, EnumRedemptionStatus.CANCELED));
 			return true;
@@ -88,8 +88,8 @@ public class RewardRedemption extends Event{
 		}
 	}
 
-	public boolean fulfill(){
-		if(status == EnumRedemptionStatus.FULFILLED) return true;
+	public boolean fulfill() {
+		if (status == EnumRedemptionStatus.FULFILLED) return true;
 		try {
 			copy(TwitchEventSubAPI.updateRedemption(this, EnumRedemptionStatus.FULFILLED));
 			return true;

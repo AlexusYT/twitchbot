@@ -3,7 +3,10 @@ package ru.alexus.twitchbot.twitch.commands.owner;
 import ru.alexus.twitchbot.bot.TwitchMessage;
 import ru.alexus.twitchbot.twitch.BotChannel;
 import ru.alexus.twitchbot.twitch.BotUser;
-import ru.alexus.twitchbot.twitch.commands.*;
+import ru.alexus.twitchbot.twitch.commands.CommandInfo;
+import ru.alexus.twitchbot.twitch.commands.CommandManager;
+import ru.alexus.twitchbot.twitch.commands.CommandResult;
+import ru.alexus.twitchbot.twitch.commands.MainCommandInfo;
 
 public class ResetAllCdCmd extends MainCommandInfo {
 	@Override

@@ -9,16 +9,16 @@ import ru.alexus.twitchbot.twitch.BotUser;
 import java.util.LinkedList;
 import java.util.Map;
 
-public abstract class MainCommandInfo implements ICommand{
+public abstract class MainCommandInfo implements ICommand {
 	@Override
 	public CommandResult execute(CommandInfo command, String text, String[] args, TwitchMessage twitchMessage, BotChannel botChannel, BotUser caller, CommandResult result) {
 		result.resultMessage = "{.caller}, ";
-		if(command.description==null) {
+		if (command.description == null) {
 			result.resultMessage += "описание этой команды неизвестно. ";
-		}else{
-			result.resultMessage += "эта команда нужна чтобы " + command.description+". ";
+		} else {
+			result.resultMessage += "эта команда нужна чтобы " + command.description + ". ";
 		}
-		if(command.subCommands==null) {
+		if (command.subCommands == null) {
 			result.resultMessage += " Нет доступных подкоманд";
 			return result;
 		}
@@ -26,12 +26,12 @@ public abstract class MainCommandInfo implements ICommand{
 		String delim = "";
 		LinkedList<ICommand> prepared = new LinkedList<>();
 
-		for (Map.Entry<String, CommandInfo> commandsEntry : command.subCommands.entrySet()){
+		for (Map.Entry<String, CommandInfo> commandsEntry : command.subCommands.entrySet()) {
 			String commandKey = commandsEntry.getKey();
 			CommandInfo commandInfo = commandsEntry.getValue();
-			if(!Utils.isRussian(commandKey)) continue;
-			if(commandInfo.levels > AccessLevels.SUBSCRIBER) continue;
-			if(prepared.contains(commandInfo.executor)) continue;
+			if (!Utils.isRussian(commandKey)) continue;
+			if (commandInfo.levels > AccessLevels.SUBSCRIBER) continue;
+			if (prepared.contains(commandInfo.executor)) continue;
 			prepared.add(commandInfo.executor);
 			commands.append(delim).append(commandsEntry.getKey());
 			delim = ", ";

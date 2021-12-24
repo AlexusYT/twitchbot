@@ -1,10 +1,8 @@
 package ru.alexus.twitchbot.eventsub;
 
-import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.util.HashMap;
-import java.util.Map;
 
 public class EventSubInfo {
 	private final String id;
@@ -23,19 +21,19 @@ public class EventSubInfo {
 		this.secret = secret;
 	}
 
-	public EventSubInfo(JSONObject root){
+	public EventSubInfo(JSONObject root) {
 
 		id = root.getString("id");
 		status = root.getString("status");
 		version = root.getString("version");
 		type = root.getString("type");
-		for(var entry : root.getJSONObject("condition").toMap().entrySet()){
+		for (var entry : root.getJSONObject("condition").toMap().entrySet()) {
 			condition.put(entry.getKey(), (String) entry.getValue());
 		}
 		callback = root.getJSONObject("transport").getString("callback");
 	}
 
-	public EventSubInfo(JSONObject root, String secret){
+	public EventSubInfo(JSONObject root, String secret) {
 		this(root);
 		this.secret = secret;
 	}

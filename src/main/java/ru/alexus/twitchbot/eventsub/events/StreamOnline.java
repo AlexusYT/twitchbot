@@ -1,9 +1,8 @@
 package ru.alexus.twitchbot.eventsub.events;
 
 import org.json.JSONObject;
-import ru.alexus.twitchbot.eventsub.objects.Reward;
 
-public class StreamOnline extends Event{
+public class StreamOnline extends Event {
 	private final String id;
 	private final String type;
 	private final String startedAt;

@@ -1,7 +1,6 @@
 package ru.alexus.twitchbot.twitch.commands;
 
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 
 public class CommandInfo {
 	public ICommand executor;
@@ -11,7 +10,6 @@ public class CommandInfo {
 	public String[] aliases;
 	public String calledAlias;
 	public int levels;
-
 
 
 }

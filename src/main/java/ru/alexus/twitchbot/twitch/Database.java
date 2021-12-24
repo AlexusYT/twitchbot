@@ -7,24 +7,26 @@ import java.sql.*;
 
 public class Database {
 
-	static class UpdateValue{
+	static class UpdateValue {
 		String name;
 		Object value;
-		public UpdateValue(String name, Object value){
+
+		public UpdateValue(String name, Object value) {
 			this.name = name;
 			this.value = value;
 		}
 	}
+
 	private final String address;
 	private final String dbname;
 	private final String login;
 	private final String pass;
 	private Connection dbConnection;
 
-	public Database(String address, String dbname, String login, String pass){
+	public Database(String address, String dbname, String login, String pass) {
 
-		if(address.endsWith("/")) this.address = address;
-		else this.address = address+"/";
+		if (address.endsWith("/")) this.address = address;
+		else this.address = address + "/";
 		this.dbname = dbname;
 		this.login = login;
 		this.pass = pass;
@@ -32,36 +34,37 @@ public class Database {
 
 	public void connect() throws SQLException {
 		DriverManager.setLoginTimeout(5);
-		dbConnection = DriverManager.getConnection(address+dbname, login, pass);
+		dbConnection = DriverManager.getConnection(address + dbname, login, pass);
 	}
+
 	public void disconnect() {
 		try {
 			dbConnection.close();
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
-		dbConnection=null;
+		dbConnection = null;
 	}
 
-	public boolean isConnected(){
-		return dbConnection!=null;
+	public boolean isConnected() {
+		return dbConnection != null;
 	}
 
 	public void executeInsert(String table, String fields, String valuesScheme, Object @NotNull ... values) throws SQLException {
-		String sql = "INSERT INTO "+table+" ("+fields+") VALUES ("+valuesScheme+")";
+		String sql = "INSERT INTO " + table + " (" + fields + ") VALUES (" + valuesScheme + ")";
 		PreparedStatement statement = dbConnection.prepareStatement(sql);
-		for (int i = 0; i < values.length; i++){
-			statement.setObject(i+1, values[i]);
+		for (int i = 0; i < values.length; i++) {
+			statement.setObject(i + 1, values[i]);
 		}
 		statement.execute();
 		statement.close();
 	}
 
-	public void executeUpdate(String table, String setScheme, String whereScheme,  Object @NotNull ... values) throws SQLException {
-		String sql = "UPDATE "+table+" SET "+setScheme+" WHERE "+whereScheme;
+	public void executeUpdate(String table, String setScheme, String whereScheme, Object @NotNull ... values) throws SQLException {
+		String sql = "UPDATE " + table + " SET " + setScheme + " WHERE " + whereScheme;
 		PreparedStatement statement = dbConnection.prepareStatement(sql);
-		for (int i = 0; i < values.length; i++){
-			statement.setObject(i+1, values[i]);
+		for (int i = 0; i < values.length; i++) {
+			statement.setObject(i + 1, values[i]);
 		}
 		statement.execute();
 	}
@@ -69,21 +72,22 @@ public class Database {
 	public ResultSet execute(String sql, Object... values) {
 		try {
 			PreparedStatement statement = dbConnection.prepareStatement(sql);
-			for (int i = 0; i < values.length; i++){
-				statement.setObject(i+1, values[i]);
+			for (int i = 0; i < values.length; i++) {
+				statement.setObject(i + 1, values[i]);
 			}
-			if(sql.startsWith("SELECT"))
+			if (sql.startsWith("SELECT"))
 				return statement.executeQuery();
 			else {
 				statement.execute();
 				return null;
 			}
-		}catch (Exception e){
+		} catch (Exception e) {
 			Globals.log.error("Failed to execute query");
 			e.printStackTrace();
 			return null;
 		}
 	}
+
 	public ResultSet executeSelect(String table) {
 		return executeSelect(table, null);
 	}
@@ -94,10 +98,10 @@ public class Database {
 
 	public ResultSet executeSelect(String table, String fields, String whereScheme, Object... whereValues) {
 		String sql = "SELECT ";
-		if(fields!=null)sql+=fields;
-		else sql+="*";
-		sql+=" FROM "+table;
-		if(whereScheme!=null&&whereValues!=null) sql+=" WHERE "+whereScheme;
+		if (fields != null) sql += fields;
+		else sql += "*";
+		sql += " FROM " + table;
+		if (whereScheme != null && whereValues != null) sql += " WHERE " + whereScheme;
 
 		try {
 			PreparedStatement statement = dbConnection.prepareStatement(sql);
@@ -107,7 +111,7 @@ public class Database {
 				}
 			}
 			return statement.executeQuery();
-		}catch (Exception e){
+		} catch (Exception e) {
 			return null;
 		}
 	}

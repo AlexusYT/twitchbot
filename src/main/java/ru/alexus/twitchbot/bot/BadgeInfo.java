@@ -1,11 +1,10 @@
 package ru.alexus.twitchbot.bot;
 
-import ru.alexus.twitchbot.bot.EnumBadgeType;
-
 public class BadgeInfo {
 	public EnumBadgeType type;
 	public int version;
-	public BadgeInfo(String badge){
+
+	public BadgeInfo(String badge) {
 		String[] str = badge.split("/");
 		switch (str[0]) {
 			case "admin" -> type = EnumBadgeType.ADMIN;

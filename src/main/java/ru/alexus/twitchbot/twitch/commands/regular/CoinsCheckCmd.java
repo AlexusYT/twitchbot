@@ -13,19 +13,19 @@ public class CoinsCheckCmd extends SubCommandInfo {
 	public CommandResult execute(CommandInfo commandInfo, String text, String[] args, TwitchMessage twitchMessage, BotChannel botChannel, BotUser caller, CommandResult result) {
 
 		BotUser targetUser = botChannel.getUserByName(args[0]);
-		if(args[0].isEmpty()||(targetUser!=null&&targetUser.getUserId()==caller.getUserId())) {
+		if (args[0].isEmpty() || (targetUser != null && targetUser.getUserId() == caller.getUserId())) {
 			result.resultMessage = "{.caller}, у тебя {coins}";
 			return result;
 		}
-		if (targetUser == null){
+		if (targetUser == null) {
 			result.resultMessage = "{.caller}, человек с ником " + args[0] + " ни разу писал в чат за этот стрим";
 			return result;
 		}
 
 		result = caller.checkSufficientCoins(commandInfo);
-		if(!result.sufficientCoins) return result;
+		if (!result.sufficientCoins) return result;
 
-		result.resultMessage = "{.caller}, у пользователя "+targetUser.getDisplayName()+" "+ Utils.pluralizeCoin(targetUser.getCoins());
+		result.resultMessage = "{.caller}, у пользователя " + targetUser.getDisplayName() + " " + Utils.pluralizeCoin(targetUser.getCoins());
 
 		return result;
 	}
@@ -43,7 +43,7 @@ public class CoinsCheckCmd extends SubCommandInfo {
 
 	@Override
 	public int getCoinCost(BotUser user) {
-		if(user.isSubscriber()||user.isOwner()||user.isBroadcaster()) return 0;
+		if (user.isSubscriber() || user.isOwner() || user.isBroadcaster()) return 0;
 		return 100;
 	}
 }

@@ -11,11 +11,11 @@ import ru.alexus.twitchbot.twitch.commands.MainCommandInfo;
 public class DeathCmd extends MainCommandInfo {
 	@Override
 	public CommandResult execute(CommandInfo command, String text, String[] args, TwitchMessage twitchMessage, BotChannel botChannel, BotUser caller, CommandResult result) {
-		if (args[0].isEmpty()){
+		if (args[0].isEmpty()) {
 			botChannel.incDeathCounter();
-			result.resultMessage = "{.caller}, стример еще раз умер! Всего их "+botChannel.getDeathCounter();
-		}else{
-			result.resultMessage = "{.caller}, стример умер  "+ Utils.pluralizeMessage(botChannel.getDeathCounter(), "раз", "раза", "раз");
+			result.resultMessage = "{.caller}, стример еще раз умер! Всего их " + botChannel.getDeathCounter();
+		} else {
+			result.resultMessage = "{.caller}, стример умер  " + Utils.pluralizeMessage(botChannel.getDeathCounter(), "раз", "раза", "раз");
 		}
 		return result;
 	}

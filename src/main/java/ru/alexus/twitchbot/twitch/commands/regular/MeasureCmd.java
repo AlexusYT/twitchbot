@@ -4,26 +4,26 @@ import ru.alexus.twitchbot.Utils;
 import ru.alexus.twitchbot.bot.TwitchMessage;
 import ru.alexus.twitchbot.twitch.BotChannel;
 import ru.alexus.twitchbot.twitch.BotUser;
-import ru.alexus.twitchbot.twitch.commands.CommandInfo;
 import ru.alexus.twitchbot.twitch.WordCases;
+import ru.alexus.twitchbot.twitch.commands.CommandInfo;
 import ru.alexus.twitchbot.twitch.commands.CommandResult;
 import ru.alexus.twitchbot.twitch.commands.MainCommandInfo;
 
 public class MeasureCmd extends MainCommandInfo {
 	@Override
 	public CommandResult execute(CommandInfo command, String text, String[] args, TwitchMessage twitchMessage, BotChannel botChannel, BotUser caller, CommandResult result) {
-		if(args[0].isEmpty()) return super.execute(command, text, args, twitchMessage, botChannel, caller, result);
+		if (args[0].isEmpty()) return super.execute(command, text, args, twitchMessage, botChannel, caller, result);
 
-		int val = Utils.random.nextInt(40)-2;
+		int val = Utils.random.nextInt(40) - 2;
 		int ed = Utils.random.nextInt(3);
 		String s = "";
-		if(ed==0) s=" мм";
-		if(ed==1) s=" cм";
-		if(ed==2) s=" км";
+		if (ed == 0) s = " мм";
+		if (ed == 1) s = " cм";
+		if (ed == 2) s = " км";
 		String word = args[0];
-		if(Utils.isRussian(word)){
+		if (Utils.isRussian(word)) {
 			WordCases cases = Utils.getWordCase(word);
-			if(cases!=null&&cases.genitive!=null&&!cases.genitive.isEmpty()) word = cases.genitive;
+			if (cases != null && cases.genitive != null && !cases.genitive.isEmpty()) word = cases.genitive;
 		}
 		switch (word) {
 			case "меня", "роста" -> result.resultMessage = "{.caller}, твой рост равен " + val + s;
@@ -125,13 +125,11 @@ public class MeasureCmd extends MainCommandInfo {
 		return new String[]{"measure", "length", "измерить", "длина"};
 	}
 
-	private static boolean is_special(char ch)
-	{
+	private static boolean is_special(char ch) {
 		return ch == 'г' || ch == 'ж' || ch == 'к' || ch == 'х' || ch == 'ч' || ch == 'ш' || ch == 'щ';
 	}
 
-	private static boolean is_vowel(char ch)
-	{
+	private static boolean is_vowel(char ch) {
 		return ch == 'а' || ch == 'е' || ch == 'ё' || ch == 'и' || ch == 'о' ||
 				ch == 'у' || ch == 'ы' || ch == 'э' || ch == 'ю' || ch == 'я' ||
 				ch == 'А' || ch == 'Е' || ch == 'Ё' || ch == 'И' || ch == 'О' ||

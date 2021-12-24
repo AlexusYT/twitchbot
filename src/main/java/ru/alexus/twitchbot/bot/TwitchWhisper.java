@@ -7,19 +7,20 @@ public class TwitchWhisper {
 	private final String text;
 	private final TwitchUser twitchUser;
 
-	public TwitchWhisper(String msgTags, String text){
+	public TwitchWhisper(String msgTags, String text) {
 		this.text = text;
 		StringBuilder builder = new StringBuilder();
 		for (String tag : msgTags.split(";")) {
 			String[] tagElem = tag.split("=");
-			try{
+			try {
 				switch (tagElem[0]) {
 					case "emotes" -> emotes = tagElem[1];
 					case "message-id" -> msgId = Integer.parseInt(tagElem[1]);
 					case "thread-id" -> threadId = tagElem[1];
 					default -> builder.append(tag).append(";");
 				}
-			}catch (Exception ignored){}
+			} catch (Exception ignored) {
+			}
 		}
 
 		this.twitchUser = new TwitchUser(builder.toString());

@@ -20,7 +20,7 @@ public class ReloadCmd extends MainCommandInfo {
 		CommandManager.registerAll();
 		Utils.deinit();
 		Utils.init();
-		while (!Utils.converter.isLoaded()){
+		while (!Utils.converter.isLoaded()) {
 			try {
 				TimeUnit.MILLISECONDS.sleep(10);
 			} catch (InterruptedException e) {

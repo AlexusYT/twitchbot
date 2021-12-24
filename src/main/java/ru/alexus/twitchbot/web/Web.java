@@ -1,23 +1,20 @@
 package ru.alexus.twitchbot.web;
 
-import com.sun.net.httpserver.HttpContext;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
 import org.json.JSONObject;
-import org.springframework.lang.NonNull;
 import ru.alexus.twitchbot.Globals;
 import ru.alexus.twitchbot.Utils;
-import ru.alexus.twitchbot.bot.TwitchBot;
 import ru.alexus.twitchbot.eventsub.EventSubInfo;
 import ru.alexus.twitchbot.eventsub.TwitchEventSubAPI;
-import ru.alexus.twitchbot.shared.ChannelOld;
 import ru.alexus.twitchbot.twitch.BotChannel;
 import ru.alexus.twitchbot.twitch.Database;
 import ru.alexus.twitchbot.twitch.Twitch;
 
-import java.io.*;
-import java.net.*;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.InetSocketAddress;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashMap;
@@ -35,7 +32,7 @@ public class Web {
 	private final Twitch twitch;
 	private final Database botDatabase;
 
-	public Web(int port, Twitch twitch, Database botDatabase){
+	public Web(int port, Twitch twitch, Database botDatabase) {
 		this.port = port;
 		this.twitch = twitch;
 		this.botDatabase = botDatabase;
@@ -46,16 +43,17 @@ public class Web {
 			Globals.log.info("Getting an app access token");
 
 //https://id.twitch.tv/oauth2/authorize?response_type=code&client_id=cxxcdpgmikulrcqf6wb899qxgfgrkw&redirect_uri=http://localhost&scope=viewing_activity_read%20channel:read:subscriptions%20channel:moderate%20channel:manage:redemptions&state=c3ab8aa609ea11e793ae92361f002671'
-			while (Globals.appAccessToken==null){
+			while (Globals.appAccessToken == null) {
 				try {
 					Globals.appAccessToken = TwitchEventSubAPI.getAppAccessToken("viewing_activity_read", "channel:read:subscriptions", "channel:moderate", "channel:manage:redemptions");
 
 					System.out.println(Globals.appAccessToken);
-				}catch (Exception e) {
+				} catch (Exception e) {
 					Globals.log.error("Failed to get app access token", e);
 					try {
 						TimeUnit.SECONDS.sleep(2);
-					} catch (InterruptedException ignored) {}
+					} catch (InterruptedException ignored) {
+					}
 				}
 			}
 			Globals.log.info("App access token received");
@@ -67,24 +65,25 @@ public class Web {
 
 		try {
 			ResultSet set = botDatabase.executeSelect("channels");
-			while (set.next()){
+			while (set.next()) {
 				BotChannel channel = new BotChannel(set, twitch);
-				if(!channel.isActivated()) continue;
+				if (!channel.isActivated()) continue;
 				channels.put(channel.getName(), channel);
 			}
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
 		Globals.log.info("Waiting an app access token");
-		while (Globals.appAccessToken==null){
+		while (Globals.appAccessToken == null) {
 			try {
 				TimeUnit.MILLISECONDS.sleep(50);
-			} catch (InterruptedException ignored) {}
+			} catch (InterruptedException ignored) {
+			}
 		}
 	}
 
-	public void unsubscribeAllEvents(){
-		if(!Utils.isWebHost()) return;
+	public void unsubscribeAllEvents() {
+		if (!Utils.isWebHost()) return;
 		Globals.log.info("Unsubscribing all subscriptions");
 		try {
 			LinkedList<EventSubInfo> events = TwitchEventSubAPI.getSubscribedEvent(null, null);
@@ -98,24 +97,23 @@ public class Web {
 				}
 			}
 			Globals.log.info("Unsubscribing finished");
-		}catch (Exception e){
+		} catch (Exception e) {
 			Globals.log.error("Failed to unsubscribe events", e);
 		}
 	}
 
-	public void subscribeChannelsEvents(){
-		for(BotChannel channel : channels.values()){
-			ChannelCallback callback =  new ChannelCallback(channel);
-			server.createContext("/"+channel.getName()+"/callback", callback);
-			if(!Utils.isWebHost()) continue;
-			for(Map.Entry<String, EventSubInfo> event : channel.getEvents().entrySet()){
+	public void subscribeChannelsEvents() {
+		for (BotChannel channel : channels.values()) {
+			ChannelCallback callback = new ChannelCallback(channel);
+			server.createContext("/" + channel.getName() + "/callback", callback);
+			if (!Utils.isWebHost()) continue;
+			for (Map.Entry<String, EventSubInfo> event : channel.getEvents().entrySet()) {
 				HashMap<String, String> conditions = new HashMap<>();
 				switch (event.getKey()) {
-					case "stream.offline", "stream.online", "channel.channel_points_custom_reward_redemption.add" ->
-							conditions.put("broadcaster_user_id", String.valueOf(channel.getTwitchID()));
+					case "stream.offline", "stream.online", "channel.channel_points_custom_reward_redemption.add" -> conditions.put("broadcaster_user_id", String.valueOf(channel.getTwitchID()));
 				}
 				try {
-					event.setValue(TwitchEventSubAPI.subscribeToEvent(event.getKey(), "1", channel.getName()+"/callback", conditions));
+					event.setValue(TwitchEventSubAPI.subscribeToEvent(event.getKey(), "1", channel.getName() + "/callback", conditions));
 					Globals.log.info("Event subscribed: " + event.getValue());
 				} catch (IOException e) {
 					e.printStackTrace();
@@ -123,15 +121,16 @@ public class Web {
 			}
 		}
 
-		if(Utils.isWebHost()) return;
+		if (Utils.isWebHost()) return;
 		new Thread(() -> {
 
-			BotChannel channel  = channels.get("daxtionoff");
+			BotChannel channel = channels.get("daxtionoff");
 
 			test(channel);
 		}).start();
 	}
-	public static void test(BotChannel channel){
+
+	public static void test(BotChannel channel) {
 		String type = "channel.channel_points_custom_reward_redemption.add";
 		String secret = "ae7514603bed265d9de55bc5b092dd71dd6b1bdc42131bbd7be3d80d8390cc";
 
@@ -192,10 +191,10 @@ public class Web {
 		headers.put("Twitch-eventsub-message-type", "notification");
 		headers.put("Twitch-eventsub-subscription-type", type);
 		headers.put("Content-type", "application/json");
-		headers.put("Authorization", "Bearer "+Globals.appAccessToken.getToken());
+		headers.put("Authorization", "Bearer " + Globals.appAccessToken.getToken());
 
 		String messageId = Utils.generateSecret();
-		headers.put("Twitch-eventsub-message-signature", "sha256="+ Utils.hmacSha256(messageId+messageTimestamp+body, secret));
+		headers.put("Twitch-eventsub-message-signature", "sha256=" + Utils.hmacSha256(messageId + messageTimestamp + body, secret));
 		headers.put("Twitch-eventsub-message-id", messageId);
 		try {
 			sendPost("http://localhost/daxtionoff/callback", headers, body);
@@ -207,12 +206,12 @@ public class Web {
 
 	}
 
-	public void startWeb(){
+	public void startWeb() {
 
 		boolean tryingStart = true;
 		int tries = 0;
 
-		while (tryingStart){
+		while (tryingStart) {
 			try {
 				Globals.log.info("Starting web-server");
 				server = HttpServer.create(new InetSocketAddress(port), 0);
@@ -222,8 +221,8 @@ public class Web {
 				tryingStart = false;
 				Globals.log.info("Successfully started web-server");
 
-				new Thread(()->{
-					while (true){
+				new Thread(() -> {
+					while (true) {
 						try {
 							TimeUnit.MINUTES.sleep(1);
 						} catch (InterruptedException e) {
@@ -236,11 +235,11 @@ public class Web {
 
 				Globals.readyToBotStart = true;
 
-			}catch (Exception e){
+			} catch (Exception e) {
 				Globals.log.error("Failed to start web-server. Retrying", e);
 			}
 			try {
-				Thread.sleep((long) Math.pow(2, tries)*1000);
+				Thread.sleep((long) Math.pow(2, tries) * 1000);
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
@@ -248,7 +247,7 @@ public class Web {
 		}
 	}
 
-	private static void clearCallbacks(){
+	private static void clearCallbacks() {
 
 		/*for (ChannelOld channel : Channels.getChannels().values()){
 			HttpHandler handler = channel.httpContext.getHandler();
@@ -273,7 +272,7 @@ public class Web {
 					Globals.log.error("Failed to get user token", e);
 				}
 
-			}catch (Exception ignored){
+			} catch (Exception ignored) {
 
 			}
 			String response = "This is the response ";

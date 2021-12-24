@@ -2,7 +2,6 @@ package ru.alexus.twitchbot.bot;
 
 import org.jetbrains.annotations.NotNull;
 
-import javax.accessibility.AccessibleSelection;
 import java.awt.*;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -19,23 +18,23 @@ public class TwitchUser {
 	private boolean turbo;
 	private int levels;
 
-	public TwitchUser(String displayName, int userId){
+	public TwitchUser(String displayName, int userId) {
 		this.displayName = displayName;
 		this.userId = userId;
 	}
 
-	public TwitchUser(String msgTags){
+	public TwitchUser(String msgTags) {
 		for (String tag : msgTags.split(";")) {
 			String[] tagElem = tag.split("=");
-			try{
-				switch (tagElem[0]){
+			try {
+				switch (tagElem[0]) {
 					case "badges":
 						for (String badge : tagElem[1].split(",")) {
 							BadgeInfo badgeInfo = new BadgeInfo(badge);
-							if(badgeInfo.type==EnumBadgeType.BROADCASTER) levels|=AccessLevels.BROADCASTER;
-							if(badgeInfo.type==EnumBadgeType.SUBSCRIBER) levels|=AccessLevels.SUBSCRIBER;
-							if(badgeInfo.type==EnumBadgeType.MODERATOR) levels|=AccessLevels.MODER;
-							if(badgeInfo.type==EnumBadgeType.VIP) levels|=AccessLevels.VIP;
+							if (badgeInfo.type == EnumBadgeType.BROADCASTER) levels |= AccessLevels.BROADCASTER;
+							if (badgeInfo.type == EnumBadgeType.SUBSCRIBER) levels |= AccessLevels.SUBSCRIBER;
+							if (badgeInfo.type == EnumBadgeType.MODERATOR) levels |= AccessLevels.MODER;
+							if (badgeInfo.type == EnumBadgeType.VIP) levels |= AccessLevels.VIP;
 							badges.put(badgeInfo.type, badgeInfo);
 						}
 						break;
@@ -44,33 +43,46 @@ public class TwitchUser {
 							emoteSets.add(Integer.parseInt(set));
 						}
 						break;
-					case "color": nickColor = Color.getColor(tagElem[1]); break;
-					case "display-name": displayName = tagElem[1]; break;
-					case "user-type": userType = tagElem[1]; break;
+					case "color":
+						nickColor = Color.getColor(tagElem[1]);
+						break;
+					case "display-name":
+						displayName = tagElem[1];
+						break;
+					case "user-type":
+						userType = tagElem[1];
+						break;
 					case "badge-info":
 						badgeInfo = tagElem[1];
 						subMonths = Integer.parseInt(badgeInfo.split("/")[1]);
 						break;
 
-					case "user-id": userId = Integer.parseInt(tagElem[1]); break;
+					case "user-id":
+						userId = Integer.parseInt(tagElem[1]);
+						break;
 
-					case "turbo": turbo = tagElem[1].equals("1"); break;
+					case "turbo":
+						turbo = tagElem[1].equals("1");
+						break;
 					case "mod":
-					case "subscriber": break;
+					case "subscriber":
+						break;
 
 					default:
-						System.out.println("Unknown user tag: "+tag);
+						System.out.println("Unknown user tag: " + tag);
 				}
-			}catch (Exception ignored){}
+			} catch (Exception ignored) {
+			}
 		}
-		if(userId==134945794) levels|=AccessLevels.OWNER;
-		if(levels==0||levels==AccessLevels.MODER) levels|=AccessLevels.REGULAR;
+		if (userId == 134945794) levels |= AccessLevels.OWNER;
+		if (levels == 0 || levels == AccessLevels.MODER) levels |= AccessLevels.REGULAR;
 	}
-	public TwitchUser(@NotNull TwitchUser newUser){
+
+	public TwitchUser(@NotNull TwitchUser newUser) {
 		copyFrom(newUser);
 	}
 
-	public void copyFrom(@NotNull TwitchUser newUser){
+	public void copyFrom(@NotNull TwitchUser newUser) {
 		this.badges.putAll(newUser.badges);
 		this.emoteSets.addAll(newUser.emoteSets);
 		this.nickColor = newUser.nickColor;
@@ -88,10 +100,11 @@ public class TwitchUser {
 	public HashMap<EnumBadgeType, BadgeInfo> getBadges() {
 		return badges;
 	}
-	public int getBadgeVersion(EnumBadgeType type){
-		try{
+
+	public int getBadgeVersion(EnumBadgeType type) {
+		try {
 			return badges.get(type).version;
-		}catch (Exception e){
+		} catch (Exception e) {
 			return -1;
 		}
 	}
@@ -103,8 +116,9 @@ public class TwitchUser {
 	public String getDisplayName() {
 		return displayName;
 	}
-	public String getLogin(){
-		if(login==null) login = displayName.toLowerCase(Locale.ROOT);
+
+	public String getLogin() {
+		if (login == null) login = displayName.toLowerCase(Locale.ROOT);
 		return login;
 	}
 
@@ -125,26 +139,27 @@ public class TwitchUser {
 	}
 
 	public boolean isMod() {
-		return (levels&AccessLevels.MODER)!=0;
+		return (levels & AccessLevels.MODER) != 0;
 	}
 
 	public boolean isSubscriber() {
-		return (levels&AccessLevels.SUBSCRIBER)!=0;
+		return (levels & AccessLevels.SUBSCRIBER) != 0;
 	}
 
 	public boolean isVip() {
-		return (levels&AccessLevels.VIP)!=0;
+		return (levels & AccessLevels.VIP) != 0;
 	}
 
 	public boolean isOwner() {
-		return (levels&AccessLevels.OWNER)!=0;
+		return (levels & AccessLevels.OWNER) != 0;
 	}
+
 	public boolean isRegular() {
-		return (levels&AccessLevels.REGULAR)!=0;
+		return (levels & AccessLevels.REGULAR) != 0;
 	}
 
 	public boolean isBroadcaster() {
-		return (levels&AccessLevels.BROADCASTER)!=0;
+		return (levels & AccessLevels.BROADCASTER) != 0;
 	}
 
 	public int getLevels() {

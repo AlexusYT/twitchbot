@@ -12,6 +12,6 @@ public class CoinsCmd extends MainCommandInfo {
 
 	@Override
 	public String[] getAliases() {
-		return new String[]{"coins", "coin",  "коины", "коинс", "коин"};
+		return new String[]{"coins", "coin", "коины", "коинс", "коин"};
 	}
 }

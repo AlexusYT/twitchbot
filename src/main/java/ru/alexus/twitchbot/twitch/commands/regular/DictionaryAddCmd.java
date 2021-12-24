@@ -40,14 +40,14 @@ public class DictionaryAddCmd extends SubCommandInfo {
 
 	@Override
 	public CommandResult execute(CommandInfo command, String text, String[] args, TwitchMessage twitchMessage, BotChannel botChannel, BotUser caller, CommandResult result) {
-		if(text.isEmpty()) return super.execute(command, text, args, twitchMessage, botChannel, caller, result);
+		if (text.isEmpty()) return super.execute(command, text, args, twitchMessage, botChannel, caller, result);
 
 		try {
 			result = caller.checkSufficientCoins(command);
-			if(!result.sufficientCoins) return result;
+			if (!result.sufficientCoins) return result;
 
-			botChannel.getDatabase().executeInsert("dictionary", "twitchID,text,textHash", "?,?,MD5(text)",  caller.getUserId(), text);
-			result.resultMessage = "{.caller}, \""+text+"\" добавлено в словарь";
+			botChannel.getDatabase().executeInsert("dictionary", "twitchID,text,textHash", "?,?,MD5(text)", caller.getUserId(), text);
+			result.resultMessage = "{.caller}, \"" + text + "\" добавлено в словарь";
 			return result;
 		} catch (SQLIntegrityConstraintViolationException e) {
 			result.coinCost = 0;
@@ -56,9 +56,9 @@ public class DictionaryAddCmd extends SubCommandInfo {
 				resultSet.next();
 				BotUser user = botChannel.getUserById(resultSet.getInt("twitchID"));
 				resultSet.close();
-				result.resultMessage = "{.caller}, \"" + text + "\" уже есть в словаре благодаря "+user.getDisplayName();
+				result.resultMessage = "{.caller}, \"" + text + "\" уже есть в словаре благодаря " + user.getDisplayName();
 				return result;
-			}catch (SQLException ex){
+			} catch (SQLException ex) {
 				e.printStackTrace();
 				result.resultMessage = "{.caller}, ошибка при добавлении в словарь";
 				return result;
@@ -70,7 +70,6 @@ public class DictionaryAddCmd extends SubCommandInfo {
 			return result;
 		}
 	}
-
 
 
 	@Override

@@ -18,12 +18,12 @@ public class TwitchMessage {
 	private String replyToUserLogin;
 	private final TwitchUser twitchUser;
 
-	public TwitchMessage(String msgTags, String text){
+	public TwitchMessage(String msgTags, String text) {
 		this.text = text;
 		StringBuilder builder = new StringBuilder();
 		for (String tag : msgTags.split(";")) {
 			String[] tagElem = tag.split("=");
-			try{
+			try {
 				switch (tagElem[0]) {
 					case "emotes" -> emotes = tagElem[1];
 					case "id" -> msgId = tagElem[1];
@@ -43,7 +43,8 @@ public class TwitchMessage {
 					case "emote-only" -> emoteOnly = tagElem[1].equals("1");
 					default -> builder.append(tag).append(";");
 				}
-			}catch (Exception ignored){}
+			} catch (Exception ignored) {
+			}
 		}
 
 		this.twitchUser = new TwitchUser(builder.toString());
@@ -84,7 +85,7 @@ public class TwitchMessage {
 	}
 
 	public boolean isReplying() {
-		return replyToUserId!=-1;
+		return replyToUserId != -1;
 	}
 
 	public String getReplyToUserDisplayName() {

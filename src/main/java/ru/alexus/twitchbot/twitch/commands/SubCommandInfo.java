@@ -4,7 +4,7 @@ import ru.alexus.twitchbot.bot.TwitchMessage;
 import ru.alexus.twitchbot.twitch.BotChannel;
 import ru.alexus.twitchbot.twitch.BotUser;
 
-public abstract class SubCommandInfo implements ICommand{
+public abstract class SubCommandInfo implements ICommand {
 
 	/*@Override
 	public String execute(CommandInfo alias, String text, MsgTags tags) {
@@ -22,9 +22,9 @@ public abstract class SubCommandInfo implements ICommand{
 	@Override
 	public CommandResult execute(CommandInfo command, String text, String[] args, TwitchMessage twitchMessage, BotChannel botChannel, BotUser caller, CommandResult result) {
 		result.resultMessage = "{.caller}, ";
-		if(command.description==null) {
+		if (command.description == null) {
 			result.resultMessage += "описание этой команды неизвестно";
-		}else{
+		} else {
 			result.resultMessage += "эта команда нужна чтобы " + command.description;
 		}
 		result.sufficientCoins = true;

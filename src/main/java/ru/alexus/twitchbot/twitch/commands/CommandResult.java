@@ -4,7 +4,8 @@ public class CommandResult {
 	public String resultMessage;
 	public int coinCost;
 	public boolean sufficientCoins;
-	public CommandResult(){
+
+	public CommandResult() {
 		resultMessage = null;
 		coinCost = 0;
 		sufficientCoins = true;

@@ -8,33 +8,36 @@ import ru.alexus.twitchbot.twitch.commands.CommandInfo;
 import ru.alexus.twitchbot.twitch.commands.CommandResult;
 import ru.alexus.twitchbot.twitch.commands.ICommand;
 
-import java.util.*;
+import java.util.Comparator;
+import java.util.LinkedList;
+import java.util.List;
 
 public class CoinsTopCmd implements ICommand {
 	@Override
 	public CommandResult execute(CommandInfo command, String text, String[] args, TwitchMessage twitchMessage, BotChannel botChannel, BotUser caller, CommandResult result) {
 		int topCout = 5;
 		List<BotUser> top = new LinkedList<>(botChannel.getUsersById().values());
-		try{
+		try {
 			topCout = Math.min(Math.max(Integer.parseInt(args[0]), 1), Math.min(5, top.size()));
-		}catch (Exception ignored){}
+		} catch (Exception ignored) {
+		}
 		top.sort(Comparator.comparingInt(BotUser::getCoins));
-		if(topCout==1){
-			BotUser user = top.get(top.size()-1);
-			result.resultMessage = "Самый богатый человек на этом канале: "+user.getDisplayName()+" - "+Utils.pluralizeCoin(user.getCoins());
+		if (topCout == 1) {
+			BotUser user = top.get(top.size() - 1);
+			result.resultMessage = "Самый богатый человек на этом канале: " + user.getDisplayName() + " - " + Utils.pluralizeCoin(user.getCoins());
 			return result;
 		}
 
 		StringBuilder builder = new StringBuilder();
 		String delim = "";
 		for (int i = 0; i < top.size(); i++) {
-			if(i+1>topCout) break;
-			BotUser user = top.get(top.size()-i-1);
-			builder.append(delim).append(i+1).append(") ").append(user.getDisplayName()).append(" - ");
+			if (i + 1 > topCout) break;
+			BotUser user = top.get(top.size() - i - 1);
+			builder.append(delim).append(i + 1).append(") ").append(user.getDisplayName()).append(" - ");
 			builder.append(Utils.pluralizeCoin(user.getCoins()));
 			delim = " | ";
 		}
-		result.resultMessage = "Топ "+topCout+" самых богатых пользователей на этом канале: "+builder;
+		result.resultMessage = "Топ " + topCout + " самых богатых пользователей на этом канале: " + builder;
 		return result;
 	}
 

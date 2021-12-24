@@ -1,4 +1,5 @@
 package ru.alexus.twitchbot.twitch;
+
 /*
 Cases.
 Nominative case,

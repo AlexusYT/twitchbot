@@ -12,13 +12,15 @@ public class CasinoTestCmd implements ICommand {
 	@Override
 	public CommandResult execute(CommandInfo command, String text, String[] args, TwitchMessage twitchMessage, BotChannel botChannel, BotUser caller, CommandResult result) {
 		int tries = 2;
-		try{
+		try {
 			tries = Math.max(Math.min(Integer.parseInt(args[0]), 5), 1);
-		}catch (Exception ignored){}
+		} catch (Exception ignored) {
+		}
 		double count = 10000;
-		try{
+		try {
 			count = Math.max(Math.min(Integer.parseInt(args[1]), 10000000), 10000);
-		}catch (Exception ignored){}
+		} catch (Exception ignored) {
+		}
 		StringBuilder builder = new StringBuilder();
 		for (int j = 0; j < tries; j++) {
 			int x0 = 0;
@@ -33,11 +35,11 @@ public class CasinoTestCmd implements ICommand {
 					case 5000 -> x50++;
 				}
 			}
-			builder.append("TEST #").append(j+1).append(": ");
-			builder.append("x0 - ").append(Math.floor(x0/count*100000)/1000).append("% | ");
-			builder.append("x1 - ").append(Math.floor(x1/count*100000)/1000).append("% | ");
-			builder.append("x2 - ").append(Math.floor(x2/count*100000)/1000).append("% | ");
-			builder.append("x50 - ").append(Math.floor(x50/count*100000)/1000).append("%; ");
+			builder.append("TEST #").append(j + 1).append(": ");
+			builder.append("x0 - ").append(Math.floor(x0 / count * 100000) / 1000).append("% | ");
+			builder.append("x1 - ").append(Math.floor(x1 / count * 100000) / 1000).append("% | ");
+			builder.append("x2 - ").append(Math.floor(x2 / count * 100000) / 1000).append("% | ");
+			builder.append("x50 - ").append(Math.floor(x50 / count * 100000) / 1000).append("%; ");
 		}
 		result.resultMessage = builder.toString();
 		return result;

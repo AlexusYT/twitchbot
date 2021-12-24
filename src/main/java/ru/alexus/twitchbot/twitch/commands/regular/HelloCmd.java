@@ -10,12 +10,14 @@ import ru.alexus.twitchbot.twitch.commands.ICommand;
 
 import java.util.LinkedList;
 
-import static ru.alexus.twitchbot.Utils.*;
+import static ru.alexus.twitchbot.Utils.getRandomText;
+import static ru.alexus.twitchbot.Utils.isRussian;
 
 public class HelloCmd implements ICommand {
 	LinkedList<String> messagesRu = new LinkedList<>();
 	LinkedList<String> messagesEn = new LinkedList<>();
-	public HelloCmd(){
+
+	public HelloCmd() {
 		messagesRu.add("Привет тебе, {.caller}");
 		messagesRu.add("Добрый день, {.caller}");
 		messagesRu.add("Добрый вечер, {.caller}");
@@ -32,7 +34,7 @@ public class HelloCmd implements ICommand {
 
 		LinkedList<String> messages = isRussian(command.calledAlias) ? messagesRu : messagesEn;
 
-		if(!args[0].isEmpty()) {
+		if (!args[0].isEmpty()) {
 			result.resultMessage = getRandomText(messages).replaceAll("\\{\\.caller}", WordUtils.capitalizeFully(args[0]));
 			return result;
 		}

@@ -12,7 +12,7 @@ import java.util.Map;
 public class MuteDisableAllCmd extends SubCommandInfo {
 	@Override
 	public CommandResult execute(CommandInfo command, String text, String[] args, TwitchMessage twitchMessage, BotChannel botChannel, BotUser caller, CommandResult result) {
-		for(Map.Entry<Integer, BotUser> entry : botChannel.getUsersById().entrySet()){
+		for (Map.Entry<Integer, BotUser> entry : botChannel.getUsersById().entrySet()) {
 			BotUser user = entry.getValue();
 			user.setMutable(false);
 			entry.setValue(user);

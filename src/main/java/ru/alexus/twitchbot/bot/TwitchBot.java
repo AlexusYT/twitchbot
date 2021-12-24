@@ -38,29 +38,29 @@ public class TwitchBot {
 	private IBotEvents botEvents;
 
 	static {
-		new Thread(()->{
-				while (true){
-					try {
-						URLConnection connection = new URL("https://api.twitchinsights.net/v1/bots/online").openConnection();
-						JSONParser parser = new JSONParser(connection.getInputStream());
-						Object obj = parser.parseObject().get("bots");
-						if(obj instanceof ArrayList){
-							viewerBots.clear();
-							for (Object bot : (ArrayList<?>) obj) {
-								if(bot instanceof ArrayList) viewerBots.add((String) ((ArrayList<?>)bot).get(0));
-							}
+		new Thread(() -> {
+			while (true) {
+				try {
+					URLConnection connection = new URL("https://api.twitchinsights.net/v1/bots/online").openConnection();
+					JSONParser parser = new JSONParser(connection.getInputStream());
+					Object obj = parser.parseObject().get("bots");
+					if (obj instanceof ArrayList) {
+						viewerBots.clear();
+						for (Object bot : (ArrayList<?>) obj) {
+							if (bot instanceof ArrayList) viewerBots.add((String) ((ArrayList<?>) bot).get(0));
 						}
+					}
 
-					} catch (ConnectException ignored) {
-					}catch (IOException | ParseException e) {
-						e.printStackTrace();
-					}
-					try {
-						TimeUnit.MINUTES.sleep(5);
-					} catch (InterruptedException e) {
-						e.printStackTrace();
-					}
+				} catch (ConnectException ignored) {
+				} catch (IOException | ParseException e) {
+					e.printStackTrace();
 				}
+				try {
+					TimeUnit.MINUTES.sleep(5);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+			}
 		}, "Viewer bots updater").start();
 	}
 
@@ -68,10 +68,10 @@ public class TwitchBot {
 	public TwitchBot(String botUsername, String botOauth) {
 		this.botUsername = botUsername.toLowerCase(Locale.ROOT);
 		if (botOauth.startsWith("oauth:")) this.botOauth = botOauth;
-		else this.botOauth="oauth:"+botOauth;
+		else this.botOauth = "oauth:" + botOauth;
 	}
 
-	public boolean connectToTwitch(int maxTries){
+	public boolean connectToTwitch(int maxTries) {
 		int tries = 0;
 		do {
 			try {
@@ -80,10 +80,11 @@ public class TwitchBot {
 			} catch (IOException e) {
 				try {
 					TimeUnit.SECONDS.sleep(1);
-				} catch (InterruptedException ignored) {}
+				} catch (InterruptedException ignored) {
+				}
 				tries++;
 			}
-		}while (tries<maxTries||maxTries<=0);
+		} while (tries < maxTries || maxTries <= 0);
 		return false;
 	}
 
@@ -91,7 +92,7 @@ public class TwitchBot {
 		do {
 			lastPingTime = -1;
 			botStop = false;
-			if(socket!=null) socket.close();
+			if (socket != null) socket.close();
 			socket = new Socket();
 			socket.connect(new InetSocketAddress(serverHostname, serverPort));
 			input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
@@ -100,21 +101,21 @@ public class TwitchBot {
 			send("NICK " + botUsername);
 			output.flush();
 			String lines = input.readLine();
-			if(lines==null) continue;
+			if (lines == null) continue;
 			if (lines.contains("Login authentication failed")) {
 				IOException exception = new AuthenticationException("Twitch login authentication failed");
-				if(botEvents!=null) botEvents.onBotConnectionFailure(this, exception);
+				if (botEvents != null) botEvents.onBotConnectionFailure(this, exception);
 				else throw exception;
 			}
-			if (!lines.contains("Welcome, GLHF!")){
+			if (!lines.contains("Welcome, GLHF!")) {
 				IOException exception = new AuthenticationException("Unknown error occurred");
-				if(botEvents!=null) botEvents.onBotConnectionFailure(this, exception);
+				if (botEvents != null) botEvents.onBotConnectionFailure(this, exception);
 				else throw exception;
 			}
-			for (int i = 0; i < 6; i++)	input.readLine();
+			for (int i = 0; i < 6; i++) input.readLine();
 
 			break;
-		}while (true);
+		} while (true);
 
 		send("CAP REQ :twitch.tv/membership twitch.tv/commands twitch.tv/tags");
 		output.flush();
@@ -122,26 +123,27 @@ public class TwitchBot {
 		boolean capabilitiesSet = false;
 		for (int i = 0; i < 10; i++) {
 			String s = input.readLine();
-			if(printOut) System.out.println(s);
-			if(s.contains("CAP * ACK")){
+			if (printOut) System.out.println(s);
+			if (s.contains("CAP * ACK")) {
 				capabilitiesSet = true;
 				break;
 			}
 		}
-		socket.setSoTimeout(5*60*1000);
-		if(!capabilitiesSet){
+		socket.setSoTimeout(5 * 60 * 1000);
+		if (!capabilitiesSet) {
 			IOException exception = new IOException("Failed to request capabilities");
-			if(botEvents!=null) botEvents.onBotConnectionFailure(this, exception);
+			if (botEvents != null) botEvents.onBotConnectionFailure(this, exception);
 			else throw exception;
 		}
-		if(botEvents!=null) botEvents.onBotConnectionSuccessful(this);
+		if (botEvents != null) botEvents.onBotConnectionSuccessful(this);
 	}
 
-	public void addChannel(String channelName, IChannelEvents listener){
-		if(leftChannels.containsKey(channelName)) joinChannel(channelName);
+	public void addChannel(String channelName, IChannelEvents listener) {
+		if (leftChannels.containsKey(channelName)) joinChannel(channelName);
 		else pendingChannels.put(channelName, new TwitchChannel(channelName, listener, this));
 	}
-	public void leaveChannel(String channelName){
+
+	public void leaveChannel(String channelName) {
 
 		try {
 			output.write("PART #" + channelName + "\n");
@@ -150,10 +152,12 @@ public class TwitchBot {
 			e.printStackTrace();
 		}
 	}
-	public void joinChannel(String channelName){
+
+	public void joinChannel(String channelName) {
 
 		try {
-			if(!leftChannels.containsKey(channelName)) throw new RuntimeException("Channel "+channelName+" not registered");
+			if (!leftChannels.containsKey(channelName))
+				throw new RuntimeException("Channel " + channelName + " not registered");
 			output.write("JOIN #" + channelName + "\n");
 			output.flush();
 		} catch (IOException e) {
@@ -164,12 +168,12 @@ public class TwitchBot {
 	public void startLoop() {
 		new Thread(() -> {
 
-			while (!botStop){
+			while (!botStop) {
 				try {
 					for (Map.Entry<String, TwitchChannel> entry : pendingChannels.entrySet()) {
 						String channelName = entry.getKey();
 						TwitchChannel channel = entry.getValue();
-						if(sentChannels.containsKey(channelName)){
+						if (sentChannels.containsKey(channelName)) {
 							sentChannels.remove(channelName);
 							pendingChannels.remove(channelName);
 							channel.listener.onBotChannelJoinFailed(this, channel, "twitch took too long to respond");
@@ -190,12 +194,12 @@ public class TwitchBot {
 			}
 		}).start();
 
-		new Thread(()->{
+		new Thread(() -> {
 			while (!botStop) {
 				try {
 					String line;
 					while ((line = input.readLine()) != null) {
-						if(printOut) System.out.println(botUsername+": "+line);
+						if (printOut) System.out.println(botUsername + ": " + line);
 						String[] elements = line.split(" ", 5);
 						if (elements[0].equals("PING")) {
 							lastPingTime = System.currentTimeMillis();
@@ -263,7 +267,7 @@ public class TwitchBot {
 								new Thread(() -> checkExceedLimit(() -> channel.listener.onNotice(this, channel, elements[0].substring(8), elements[4].substring(1)))).start();
 							}
 							case "WHISPER" -> {
-								if(botEvents==null) continue;
+								if (botEvents == null) continue;
 								TwitchWhisper whisper = new TwitchWhisper(elements[0].substring(1), elements[4].substring(1));
 								new Thread(() -> checkExceedLimit(() -> botEvents.onWhisper(this, whisper.getTwitchUser(), whisper))).start();
 							}
@@ -274,11 +278,11 @@ public class TwitchBot {
 					}
 				} catch (Exception e) {
 					Exception exception = e;
-					if(!botStop) {
+					if (!botStop) {
 						botFailure = true;
 						if (botEvents != null) {
-							
-							if(exception instanceof SocketTimeoutException){
+
+							if (exception instanceof SocketTimeoutException) {
 								exception = new RuntimeException("Twitch server is not responding");
 							}
 							botEvents.onBotConnectionFailure(this, exception);
@@ -286,18 +290,18 @@ public class TwitchBot {
 					}
 				}
 
-				if(botFailure&&!botStop){
+				if (botFailure && !botStop) {
 					int tries = 0;
-					do{
+					do {
 						try {
-							if (botEvents != null&&!botEvents.onBotConnectionRetryStarted(this)){
+							if (botEvents != null && !botEvents.onBotConnectionRetryStarted(this)) {
 								botStop = true;
 								break;
 							}
 							connectToTwitch();
 							botFailure = false;
 							break;
-						}catch (Exception e){
+						} catch (Exception e) {
 							botFailure = true;
 						}
 						tries++;
@@ -306,7 +310,7 @@ public class TwitchBot {
 						} catch (InterruptedException e) {
 							e.printStackTrace();
 						}
-					}while (true);
+					} while (true);
 
 					pendingChannels.putAll(joinedChannels);
 					joinedChannels.clear();
@@ -314,21 +318,21 @@ public class TwitchBot {
 				}
 			}
 			botStopped = true;
-			if(botEvents!=null) botEvents.onBotStopped(this);
+			if (botEvents != null) botEvents.onBotStopped(this);
 		}).start();
 
 	}
 
-	public String getChannelStatus(String channelName){
-		if(pendingChannels.containsKey(channelName)) return "pending";
-		if(joinedChannels.containsKey(channelName)) return "joined";
-		if(leftChannels.containsKey(channelName)) return "left";
+	public String getChannelStatus(String channelName) {
+		if (pendingChannels.containsKey(channelName)) return "pending";
+		if (joinedChannels.containsKey(channelName)) return "joined";
+		if (leftChannels.containsKey(channelName)) return "left";
 		return "unknown";
 	}
 
-	public void stopBot(){
+	public void stopBot() {
 		try {
-			if(botEvents!=null) botEvents.onBotStopping(this);
+			if (botEvents != null) botEvents.onBotStopping(this);
 			botStop = true;
 			socket.close();
 			pendingChannels.clear();
@@ -342,38 +346,40 @@ public class TwitchBot {
 			e.printStackTrace();
 		}
 	}
+
 	public long getLastPingTime() {
 		return lastPingTime;
 	}
 
 	private void send(String text) throws IOException {
-		if(output==null) return;
-		output.write(text+"\n");
+		if (output == null) return;
+		output.write(text + "\n");
 	}
 
 	public void sendToIRC(String text) throws IOException {
-		if(output==null) return;
-		output.write(text+"\n");
+		if (output == null) return;
+		output.write(text + "\n");
 		output.flush();
 	}
 
-	public void sendWhisper(String user, String message){
+	public void sendWhisper(String user, String message) {
 		try {
-			if(botEvents!=null) message=botEvents.onSendingWhisper(this, message);
-			sendToIRC("PRIVMSG "+botUsername+" :/w " + user + " " + message);
+			if (botEvents != null) message = botEvents.onSendingWhisper(this, message);
+			sendToIRC("PRIVMSG " + botUsername + " :/w " + user + " " + message);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 	}
 
-	private void checkExceedLimit(Runnable runnable){
-		if(runningThreads<maxRunningThreads) {
+	private void checkExceedLimit(Runnable runnable) {
+		if (runningThreads < maxRunningThreads) {
 			runningThreads++;
 			runnable.run();
 			runningThreads--;
 		} else
 			System.err.println("Event skipped because of exceeding limit of running threads");
 	}
+
 	public IBotEvents getBotEvents() {
 		return botEvents;
 	}

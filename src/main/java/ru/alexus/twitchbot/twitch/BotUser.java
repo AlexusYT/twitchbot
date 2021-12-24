@@ -11,20 +11,20 @@ import java.util.HashMap;
 
 public class BotUser {
 	private TwitchUser twitchUser;
-	private int coins, messages=-1;
+	private int coins, messages = -1;
 	private boolean mutable;
 
 	public final HashMap<CommandInfo, Long> commandsLastExecute = new HashMap<>();
 	public final HashMap<CommandInfo, Integer> commandsExecuteCount = new HashMap<>();
 
-	public BotUser(TwitchUser twitchUser, ResultSet set){
+	public BotUser(TwitchUser twitchUser, ResultSet set) {
 		try {
 			if (twitchUser != null) this.twitchUser = twitchUser;
 			else {
-				if(set==null) return;
+				if (set == null) return;
 				this.twitchUser = new TwitchUser(set.getString("nickname"), set.getInt("twitchID"));
 			}
-			if(set==null) return;
+			if (set == null) return;
 			coins = set.getInt("buggycoins");
 			mutable = set.getBoolean("mutable");
 
@@ -34,11 +34,11 @@ public class BotUser {
 
 	}
 
-	public String getLogin(){
+	public String getLogin() {
 		return twitchUser.getLogin();
 	}
 
-	public String getDisplayName(){
+	public String getDisplayName() {
 		return twitchUser.getDisplayName();
 	}
 
@@ -72,20 +72,20 @@ public class BotUser {
 
 
 	@NonNull
-	public CommandResult checkSufficientCoins(@NonNull CommandInfo info){
+	public CommandResult checkSufficientCoins(@NonNull CommandInfo info) {
 
 		CommandResult result = new CommandResult();
 		result.coinCost = info.executor.getCoinCost(this);
-		result.sufficientCoins = this.getCoins() - result.coinCost >=0;
+		result.sufficientCoins = this.getCoins() - result.coinCost >= 0;
 		return result;
 	}
 
 
-	public boolean isSubscriber(){
+	public boolean isSubscriber() {
 		return twitchUser.isSubscriber();
 	}
 
-	public boolean isBroadcaster(){
+	public boolean isBroadcaster() {
 		return twitchUser.isBroadcaster();
 	}
 
@@ -101,7 +101,7 @@ public class BotUser {
 		return twitchUser.isOwner();
 	}
 
-	public boolean isRegular(){
+	public boolean isRegular() {
 		return twitchUser.isRegular();
 	}
 

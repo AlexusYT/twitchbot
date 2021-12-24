@@ -16,16 +16,12 @@
 
 package ru.alexus.twitchbot;
 
-import jdk.jshell.execution.Util;
-import org.springframework.boot.web.embedded.undertow.UndertowServletWebServer;
-import ru.alexus.twitchbot.bot.*;
-import ru.alexus.twitchbot.shared.ChannelOld;
+import ru.alexus.twitchbot.bot.TwitchBot;
 import ru.alexus.twitchbot.twitch.Database;
 import ru.alexus.twitchbot.twitch.Twitch;
 import ru.alexus.twitchbot.web.Web;
 
 import java.io.IOException;
-import java.time.Year;
 import java.util.concurrent.TimeUnit;
 
 
@@ -33,7 +29,7 @@ public class Main {
 
 	public static void main(String[] args) throws Exception {
 		Utils.init();
-		if(Utils.isWebHost())
+		if (Utils.isWebHost())
 			System.out.println("Running on hosting");
 		else
 			System.out.println("Running on local");
@@ -42,11 +38,11 @@ public class Main {
 
 		Globals.log.info("Connecting to bot database");
 		int tries = 0;
-		do{
+		do {
 			try {
 				botDatabase.connect();
 				break;
-			}catch (Exception e){
+			} catch (Exception e) {
 				Globals.log.error("Failed to connect to database", e);
 			}
 			tries++;
@@ -55,7 +51,7 @@ public class Main {
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
-		}while (true);
+		} while (true);
 		Globals.log.info("Connection successful");
 
 		TwitchBot twitchBot = new TwitchBot("TheBuggyBot", "oauth:qnqb5c3by68itlapde0rh463vh5kq2");
@@ -72,19 +68,20 @@ public class Main {
 				e.printStackTrace();
 			}
 			TimeUnit.SECONDS.sleep(2);
-		}while (true);
+		} while (true);
 		twitchBot.startLoop();
 		new Thread(() -> {
 			while (true) {
 				try {
 					TimeUnit.MINUTES.sleep(20);
 					if (Utils.isWebHost()) Utils.sendGet(Globals.serverAddress, null, null);
-				} catch (IOException | InterruptedException ignored) {}
+				} catch (IOException | InterruptedException ignored) {
+				}
 			}
 		}, "Web host wake").start();
 
 		String port = System.getenv("PORT");
-		if(port==null) port = "80";
+		if (port == null) port = "80";
 		Web web = new Web(Integer.parseInt(port), twitch, botDatabase);
 		web.start();
 		web.unsubscribeAllEvents();

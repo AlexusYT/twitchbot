@@ -15,6 +15,7 @@ public class MuteDisableCmd extends SubCommandInfo {
 		result.resultMessage = "{.caller}, теперь тебя не могут временно отстранить другие зрители. P.S. Модераторы по-прежнему могут";
 		return result;
 	}
+
 	@Override
 	public String[] getAliases() {
 		return new String[]{"запретить", "отключить", "deny", "disable"};

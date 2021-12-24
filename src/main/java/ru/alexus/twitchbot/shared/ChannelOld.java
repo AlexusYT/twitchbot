@@ -18,31 +18,32 @@ public class ChannelOld {
 
 	public void subscribeEvent(String type, Map<String, String> conditions) {
 		try {
-			Globals.log.info("Subscribing to event "+type+" for "+channelName);
-			subscriptions.put(type, TwitchEventSubAPI.subscribeToEvent(type, "1", channelName+"/callback", conditions));
+			Globals.log.info("Subscribing to event " + type + " for " + channelName);
+			subscriptions.put(type, TwitchEventSubAPI.subscribeToEvent(type, "1", channelName + "/callback", conditions));
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
 
-	public void subscriptionRevoked(EventSubInfo subInfo){
-		Globals.log.info("Subscription "+subInfo.getType()+" revoked from "+channelName+". Reason: "+subInfo.getStatus());
-		if(subInfo.getStatus().equals("authorization_revoked")){
-			try{
+	public void subscriptionRevoked(EventSubInfo subInfo) {
+		Globals.log.info("Subscription " + subInfo.getType() + " revoked from " + channelName + ". Reason: " + subInfo.getStatus());
+		if (subInfo.getStatus().equals("authorization_revoked")) {
+			try {
 				subscriptions.put(subInfo.getType(), TwitchEventSubAPI.resubscribeToEvent(subInfo));
-			}catch (Exception e){
+			} catch (Exception e) {
 				e.printStackTrace();
 			}
 		}
 	}
 
 	public void subscriptionNotification(EventSubInfo subInfo, JSONObject event) {
-		Globals.log.info("Subscription "+subInfo.getType()+" notified for "+channelName);
-		Globals.log.info("Event object: "+event);
+		Globals.log.info("Subscription " + subInfo.getType() + " notified for " + channelName);
+		Globals.log.info("Event object: " + event);
 
 		//Twitch.sendMsg(subInfo.getType(), this);
 	}
-	public void onRewardRedemption(EventSubInfo subInfo, RewardRedemption event){
+
+	public void onRewardRedemption(EventSubInfo subInfo, RewardRedemption event) {
 		/*UserOld user = this.getUserById(event.getUserId());
 		Reward reward = event.getReward();
 		Globals.log.info("User "+user.getDisplayName()+" redeemed reward "+reward+" in "+channelName);
@@ -54,8 +55,6 @@ public class ChannelOld {
 		}*/
 
 	}
-
-
 
 
 }

@@ -10,7 +10,8 @@ import java.io.*;
 class ChannelHandler implements HttpHandler {
 	String index;
 	ChannelOld channel;
-	public ChannelHandler(ChannelOld channel){
+
+	public ChannelHandler(ChannelOld channel) {
 		this.channel = channel;
 		try {
 			ClassLoader classloader = Thread.currentThread().getContextClassLoader();
@@ -26,9 +27,9 @@ class ChannelHandler implements HttpHandler {
 				builder.append(line.replaceAll("\\{channelName}", channel.channelName)).append("\n");
 			}
 			index = builder.toString();
-		}catch (Exception e){
-			Globals.log.error("Failed to setup template for channel "+channel.channelName, e);
-			index = "Failed to setup template for channel "+channel.channelName;
+		} catch (Exception e) {
+			Globals.log.error("Failed to setup template for channel " + channel.channelName, e);
+			index = "Failed to setup template for channel " + channel.channelName;
 		}
 
 	}

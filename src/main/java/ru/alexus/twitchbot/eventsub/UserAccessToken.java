@@ -10,10 +10,10 @@ public class UserAccessToken {
 	private final LinkedList<String> scopes = new LinkedList<>();
 	private final String tokenType;
 
-	public UserAccessToken(JSONObject root){
+	public UserAccessToken(JSONObject root) {
 		refresh = root.getString("refresh_token");
 		token = root.getString("access_token");
-		for(Object scope :  root.getJSONArray("scope")) scopes.add((String) scope);
+		for (Object scope : root.getJSONArray("scope")) scopes.add((String) scope);
 		tokenType = root.getString("token_type");
 	}
 
@@ -24,7 +24,7 @@ public class UserAccessToken {
 
 	@Override
 	public String toString() {
-		return tokenType+" "+token;
+		return tokenType + " " + token;
 	}
 
 	public String getToken() {
@@ -35,7 +35,7 @@ public class UserAccessToken {
 		return tokenType;
 	}
 
-	public boolean containsScope(String scope){
+	public boolean containsScope(String scope) {
 		return scopes.contains(scope);
 	}
 }
