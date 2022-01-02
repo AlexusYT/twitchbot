@@ -92,6 +92,7 @@ public class TwitchBot {
 		do {
 			lastPingTime = -1;
 			botStop = false;
+			botStopped = false;
 			if (socket != null) socket.close();
 			socket = new Socket();
 			socket.connect(new InetSocketAddress(serverHostname, serverPort));
@@ -340,11 +341,14 @@ public class TwitchBot {
 			leftChannels.clear();
 			sentChannels.clear();
 			while (!botStopped) TimeUnit.MILLISECONDS.sleep(500);
-			botStopped = false;
 			botFailure = false;
 		} catch (IOException | InterruptedException e) {
 			e.printStackTrace();
 		}
+	}
+
+	public boolean isBotRunning() {
+		return !botStopped;
 	}
 
 	public long getLastPingTime() {

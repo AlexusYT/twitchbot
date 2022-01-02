@@ -70,15 +70,15 @@ public class Main {
 			TimeUnit.SECONDS.sleep(2);
 		} while (true);
 		twitchBot.startLoop();
-		new Thread(() -> {
-			while (true) {
+		/*new Thread(() -> {
+			while (twitchBot.isBotRunning()) {
 				try {
 					TimeUnit.MINUTES.sleep(20);
 					if (Utils.isWebHost()) Utils.sendGet(Globals.serverAddress, null, null);
 				} catch (IOException | InterruptedException ignored) {
 				}
 			}
-		}, "Web host wake").start();
+		}, "Web host wake").start();*/
 
 		String port = System.getenv("PORT");
 		if (port == null) port = "80";
