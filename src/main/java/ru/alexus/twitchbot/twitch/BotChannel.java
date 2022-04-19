@@ -1,5 +1,6 @@
 package ru.alexus.twitchbot.twitch;
 
+import com.mysql.cj.jdbc.exceptions.CommunicationsException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.json.JSONArray;
@@ -49,6 +50,18 @@ public class BotChannel implements IChannelEvents, IEventSub {
 	private boolean enabled;
 	private boolean enableAfterJoin;
 	private boolean finishingStream;
+	public BotChannel(String name) {
+		this.twitch = null;
+		this.name = name.toLowerCase(Locale.ROOT);
+		this.activated = true;
+		this.twitchID = -1;
+		this.token = null;
+		this.greetMsg = "Привет всем";
+		this.byeMsg = "Всем спасибо и пока...";
+		database = new Database(Globals.databaseUrl, "u244065_botdb_"+name, Globals.databaseLogin, Globals.databasePass);
+		streamerBot = null;
+
+	}
 
 	public BotChannel(@NotNull ResultSet set, Twitch twitch) throws SQLException {
 		this.twitch = twitch;
@@ -61,37 +74,35 @@ public class BotChannel implements IChannelEvents, IEventSub {
 		for (Object obj : new JSONArray(set.getString("events"))) {
 			if (obj instanceof String event) events.put(event, null);
 		}
-		database = new Database(Globals.databaseUrl, name + "_botDB", Globals.databaseLogin, Globals.databasePass);
+		database = new Database(Globals.databaseUrl, "u244065_botdb_"+name, Globals.databaseLogin, Globals.databasePass);
 		streamerBot = new TwitchBot(this.name, this.token);
 	}
 
 	@Override
 	public void onBotChannelJoin(TwitchBot bot, TwitchChannel twitchChannel) {
 		this.twitchChannel = twitchChannel;
-		int tries = 0;
-		do {
-			try {
-				database.connect();
-				break;
-			} catch (Exception e) {
-				tries++;
-				Globals.log.error("Failed to connect to " + twitchChannel.getChannelName() + " database", e);
+		new Thread(() -> {
+			Globals.log.info("Connecting to "+twitchChannel.getChannelName() + " database");
+			int tries = 0;
+			do {
+				try {
+					database.connect();
+					break;
+				} catch (CommunicationsException e) {
+					Globals.log.error("Failed to connect to " + twitchChannel.getChannelName() + " database");
+				}catch (Exception e) {
+					Globals.log.error("Failed to connect to " + twitchChannel.getChannelName() + " database", e);
+				}
+				if(tries<7) tries++;
 				try {
 					TimeUnit.SECONDS.sleep((long) Math.pow(2, tries));
-				} catch (InterruptedException ignore) {
+				} catch (InterruptedException e) {
+					e.printStackTrace();
 				}
-			}
-		} while (true);
-		Globals.log.info("Connection to " + twitchChannel.getChannelName() + " database successful");
-		if (enableAfterJoin) {
-			enabled = true;
-			if (this.startSession()) {
-				Globals.log.info("Session started for channel " + this.getName() + " with id " + this.getSessionId());
-			} else {
-				Globals.log.error("Failed to start session for channel " + this.getName());
-			}
-			sendMessage(getGreetMsg(), null, null);
-		}
+			} while (true);
+
+			Globals.log.info("Connection to " + twitchChannel.getChannelName() + " database successful");
+		}, twitchChannel.getChannelName()+" database connection").start();
 	}
 
 	@Override
@@ -104,6 +115,7 @@ public class BotChannel implements IChannelEvents, IEventSub {
 
 	@Override
 	public void onMessage(TwitchBot bot, TwitchChannel twitchChannel, TwitchUser twitchUser, TwitchMessage message) {
+		Globals.log.info(twitchUser + " sent message to " + twitchChannel.getChannelName() + ": " + message.getText());
 		System.out.println(twitchUser + " sent message to " + twitchChannel.getChannelName() + ": " + message.getText());
 		BotUser user = updateUser(twitchUser);
 		if (message.isFirstMsg()) {
@@ -195,14 +207,17 @@ public class BotChannel implements IChannelEvents, IEventSub {
 	}
 
 	public BotChannel getChannelByName(String name) {
+		if (twitch == null) return null;
 		return twitch.getChannelByName(name);
 	}
 
 	public boolean joinChannel(String name) {
+		if (twitch == null) return false;
 		return twitch.joinChannel(name);
 	}
 
 	public void leaveChannel(String name) {
+		if (twitch == null) return;
 		twitch.leaveChannel(name);
 	}
 
@@ -212,6 +227,7 @@ public class BotChannel implements IChannelEvents, IEventSub {
 	}
 
 	public void stopBot() {
+		if (twitch == null) return;
 		twitch.stopBot();
 	}
 
@@ -314,10 +330,24 @@ public class BotChannel implements IChannelEvents, IEventSub {
 
 	public synchronized boolean startSession() {
 		try {
-			ResultSet sessionSet = database.execute("SELECT getOrCreateSession()");
+			ResultSet existsSet = database.execute("SELECT sessions.id, sessions.ended FROM sessions ORDER BY sessions.id DESC LIMIT 1");
+			if(existsSet==null) return false;
+			existsSet.next();
+			sessionId = existsSet.getInt("id");
+			boolean ended = existsSet.getBoolean("ended");
+			existsSet.close();
+			if(ended){
+				database.execute("INSERT INTO sessions (`id`, `startDate`, `endDate`, `ended`) VALUES (NULL, CURRENT_TIMESTAMP, NULL, '0')").close();
+				existsSet = database.execute("SELECT LAST_INSERT_ID() AS id");
+				existsSet.next();
+				sessionId = existsSet.getInt("id");
+				existsSet.close();
+			}
+			/*ResultSet sessionSet = database.execute("SELECT getOrCreateSession()");
+			if(sessionSet==null) return false;
 			sessionSet.next();
 			sessionId = sessionSet.getInt(1);
-			sessionSet.close();
+			sessionSet.close();*/
 
 			ResultSet usersSet = database.executeSelect("users");
 			while (usersSet.next()) {
@@ -501,13 +531,38 @@ public class BotChannel implements IChannelEvents, IEventSub {
 		String type = event.getType();
 		if (type.equals("live")) {
 			if (!this.enabled) {
-				twitch.addChannel(event.getBroadcasterLogin(), this);
-				enableAfterJoin = true;
+				twitch.joinChannel(event.getBroadcasterLogin());
+				while (!this.twitch.getChannelStatus(name).equals("joined")){
+					try {
+						TimeUnit.MILLISECONDS.sleep(100);
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+				}
+				if (this.startSession()) {
+					Globals.log.info("Session started for channel " + this.getName() + " with id " + this.getSessionId());
+					sendMessage(getGreetMsg(), null, null);
+					enabled = true;
+				} else {
+					Globals.log.error("Failed to start session for channel " + this.getName());
+					sendMessage("Не удалось запустить сессию", null, null);
+				}
 			}
 		}
 
 	}
+/*
 
+		if (enableAfterJoin) {
+			enabled = true;
+			if (this.startSession()) {
+				Globals.log.info("Session started for channel " + this.getName() + " with id " + this.getSessionId());
+			} else {
+				Globals.log.error("Failed to start session for channel " + this.getName());
+			}
+			sendMessage(getGreetMsg(), null, null);
+		}
+ */
 	@Override
 	public void onStreamOffline(EventSubInfo subInfo, Event event) {
 		if (!enabled) return;

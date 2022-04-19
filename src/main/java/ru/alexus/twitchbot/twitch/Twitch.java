@@ -17,12 +17,9 @@ import java.util.Locale;
 
 
 public class Twitch implements IBotEvents {
-	private final LinkedHashMap<String, BotChannel> channels = new LinkedHashMap<>();
 	private TwitchBot bot;
-	private final Database botDatabase;
 
-	public Twitch(Database botDatabase) {
-		this.botDatabase = botDatabase;
+	public Twitch() {
 	}
 
 
@@ -54,7 +51,7 @@ public class Twitch implements IBotEvents {
 
 	@Override
 	public void onBotConnectionFailure(TwitchBot bot, Throwable throwable) {
-		for (BotChannel channel : channels.values()) {
+		for (BotChannel channel : BotConfig.botChannels.values()) {
 			channel.saveData();
 		}
 		System.out.println("Bot failure: " + throwable);
@@ -72,7 +69,7 @@ public class Twitch implements IBotEvents {
 	@Override
 	public void onBotStopping(TwitchBot bot) {
 		System.out.println("Bot stopping");
-		for (BotChannel channel : channels.values()) {
+		for (BotChannel channel : BotConfig.botChannels.values()) {
 			if (!channel.isActivated()) continue;
 			System.out.println("Saving data for channel " + channel);
 			channel.saveData();
@@ -98,39 +95,29 @@ public class Twitch implements IBotEvents {
 	}
 
 	public BotChannel getChannelByName(String name) {
-		return channels.get(name);
+		return BotConfig.botChannels.get(name);
 	}
 
 	public boolean joinChannel(String name) {
-		try {
-			if (channels.containsKey(name)) return false;
+		String status = bot.getChannelStatus(name);
+		if(!status.equals("joined")&&!status.equals("unknown")) return false;
+		BotChannel channel = BotConfig.getChannel(name);
+		bot.addChannel(channel.getName(), channel);
 
-			ResultSet set = botDatabase.executeSelect("channels", "*", "name = ?", name);
-			if (set.next()) {
-				BotChannel channel = new BotChannel(set, this);
-				channels.put(channel.getName(), channel);
-				bot.addChannel(channel.getName(), channel);
-			}
-			return true;
-
-		} catch (SQLException e) {
-			e.printStackTrace();
-			return false;
-		}
+		return true;
 	}
 
 	public void leaveChannel(String name) {
 		bot.leaveChannel(name);
-		channels.remove(name);
 	}
 
 	public void stopBot() {
 		bot.stopBot();
 	}
 
-	public void addChannel(String name, BotChannel channel) {
-		channels.put(name, channel);
-		bot.addChannel(name, channel);
+	public String getChannelStatus(String name) {
+		if(bot==null) return "unknown";
+		return bot.getChannelStatus(name);
 	}
 
 

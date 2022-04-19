@@ -53,15 +53,22 @@ public class EnableCmd implements ICommand {
 			return result;
 		}
 
+		if(!channel.getDatabase().isConnected()){
+			result.resultMessage = "Ошибка при подключении к базе данных! Часть команд не работает";
+			return result;
+		}
 		if (channel.startSession()) {
+			channel.setEnabled(true);
+			if (thisChannel) result.resultMessage = channel.getGreetMsg();
+			else result.resultMessage = "Сессия запущена на канале " + channel.getName();
 			Globals.log.info("Session started for channel " + channel.getName() + " with id " + channel.getSessionId());
 		} else {
+			channel.setEnabled(false);
+			if (thisChannel) result.resultMessage = "Не удалось запустить сессию";
+			else result.resultMessage = "Не удалось запустить сессию на канале " + channel.getName();
 			Globals.log.error("Failed to start session for channel " + channel.getName());
 		}
-		channel.setEnabled(true);
 
-		if (thisChannel) result.resultMessage = channel.getGreetMsg();
-		else result.resultMessage = "Сессия запущена на канале " + channel.getName();
 		return result;
 	}
 

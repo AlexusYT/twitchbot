@@ -38,6 +38,7 @@ public class Database {
 	}
 
 	public void disconnect() {
+		if(dbConnection==null) return;
 		try {
 			dbConnection.close();
 		} catch (SQLException e) {
@@ -71,6 +72,7 @@ public class Database {
 
 	public ResultSet execute(String sql, Object... values) {
 		try {
+			if(dbConnection==null) return null;
 			PreparedStatement statement = dbConnection.prepareStatement(sql);
 			for (int i = 0; i < values.length; i++) {
 				statement.setObject(i + 1, values[i]);
@@ -82,8 +84,7 @@ public class Database {
 				return null;
 			}
 		} catch (Exception e) {
-			Globals.log.error("Failed to execute query");
-			e.printStackTrace();
+			Globals.log.error("Failed to execute query", e);
 			return null;
 		}
 	}

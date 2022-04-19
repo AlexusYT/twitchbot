@@ -9,7 +9,7 @@ import ru.alexus.twitchbot.Utils;
 import ru.alexus.twitchbot.eventsub.EventSubInfo;
 import ru.alexus.twitchbot.eventsub.TwitchEventSubAPI;
 import ru.alexus.twitchbot.twitch.BotChannel;
-import ru.alexus.twitchbot.twitch.Database;
+import ru.alexus.twitchbot.twitch.BotConfig;
 import ru.alexus.twitchbot.twitch.Twitch;
 
 import java.io.IOException;
@@ -27,15 +27,12 @@ import static ru.alexus.twitchbot.Utils.sendPost;
 
 public class Web {
 	private HttpServer server;
-	private final LinkedHashMap<String, BotChannel> channels = new LinkedHashMap<>();
 	private final int port;
 	private final Twitch twitch;
-	private final Database botDatabase;
 
-	public Web(int port, Twitch twitch, Database botDatabase) {
+	public Web(int port, Twitch twitch) {
 		this.port = port;
 		this.twitch = twitch;
-		this.botDatabase = botDatabase;
 	}
 
 	public void start() throws IOException {
@@ -63,16 +60,6 @@ public class Web {
 		server.setExecutor(null); // creates a default executor
 		server.start();
 
-		try {
-			ResultSet set = botDatabase.executeSelect("channels");
-			while (set.next()) {
-				BotChannel channel = new BotChannel(set, twitch);
-				if (!channel.isActivated()) continue;
-				channels.put(channel.getName(), channel);
-			}
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}
 		Globals.log.info("Waiting an app access token");
 		while (Globals.appAccessToken == null) {
 			try {
@@ -103,7 +90,7 @@ public class Web {
 	}
 
 	public void subscribeChannelsEvents() {
-		for (BotChannel channel : channels.values()) {
+		for (BotChannel channel : BotConfig.botChannels.values()) {
 			ChannelCallback callback = new ChannelCallback(channel);
 			server.createContext("/" + channel.getName() + "/callback", callback);
 			if (!Utils.isWebHost()) continue;
@@ -121,13 +108,12 @@ public class Web {
 			}
 		}
 
-		if (Utils.isWebHost()) return;
+		/*if (Utils.isWebHost()) return;
 		new Thread(() -> {
-
-			BotChannel channel = channels.get("daxtionoff");
+			BotChannel channel = BotConfig.getChannel("daxtionoff");
 
 			test(channel);
-		}).start();
+		}).start();*/
 	}
 
 	public static void test(BotChannel channel) {

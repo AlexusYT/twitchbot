@@ -131,7 +131,7 @@ public class CommandManager {
 
 		CommandInfo cmd = getCommand(alias);
 		if (cmd == null) return null;
-		if (!channel.isEnabled() && cmd.executor != Objects.requireNonNull(getCommand("enable")).executor) return null;
+		//if (!channel.isEnabled() && cmd.executor != Objects.requireNonNull(getCommand("enable")).executor) return null;
 		if (command.length > 1 && cmd.subCommands != null) {
 			String subCmdAlias = command[1].toLowerCase(Locale.ROOT);
 			CommandInfo temp = getCommand(subCmdAlias, cmd.subCommands);
