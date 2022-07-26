@@ -1,40 +1,27 @@
-# java-getting-started
+# TwitchBot
+Чат-бот для Twitch. Не обновляется. Часть функционала скорее всего уже не работает из-за обновлений API на стороне Twitch. 
 
-A barebones Java app, which can easily be deployed to Heroku.
+# Лицензия
 
-This application supports the [Getting Started with Java on Heroku](https://devcenter.heroku.com/articles/getting-started-with-java) article - check it out.
+Исходный код, а также все, что с ним связано, запрещено распространять, компилировать, использовать или проводить с ним какие-либо другие манипуляции, кроме просмотра с целью изучения работы алгоритмов. 
 
-[![Deploy to Heroku](https://www.herokucdn.com/deploy/button.png)](https://heroku.com/deploy)
+## Функционал
 
-## Running Locally
+* Собственная чат-валюта.
+* Информация о ней и о статистике канала хранится в бд.
+* Статистика трансляций (Дата и время начала, дата и время конца)
+* Если после падения трансляция в течение 5 минут возобновилась, то бот продолжает сессию трансляции, иначе начинает новую.
+* Активация бота (запуск сессии) при старте стрима (скорее всего уже не работает) или командой.
+* Разграничение прав доступа между участниками чата.
+* Различные команды.
+* Возможность создавать обработчики наград (reward redeem handler). Скорее всего уже не работает.
+* Исправление неправильной раскладки сообщения, написанного другим участником.
+* Наказание в виде штрафа баллами при флуде.
+* Возможность управлять ботом из личных сообщений (только стример и создатель).
+* ...
 
-Make sure you have Java and Maven installed.  Also, install the [Heroku CLI](https://cli.heroku.com/).
+Больше функционала можно найти в исходном коде
 
-```sh
-$ git clone https://github.com/heroku/java-getting-started.git
-$ cd java-getting-started
-$ mvn install
-$ heroku local:start
-```
+Стоит заметить, что бот работал на heroku. Для запуска Java-приложения на этом хостинге, приложение должно быть зависимо от Spring, но непосредственно на функционирование это не влияет. 
 
-Your app should now be running on [localhost:5000](http://localhost:5000/).
-
-If you're going to use a database, ensure you have a local `.env` file that reads something like this:
-
-```
-JDBC_DATABASE_URL=jdbc:postgresql://localhost:5432/java_database_name
-```
-
-## Deploying to Heroku
-
-```sh
-$ heroku create
-$ git push heroku main
-$ heroku open
-```
-
-## Documentation
-
-For more information about using Java on Heroku, see these Dev Center articles:
-
-- [Java on Heroku](https://devcenter.heroku.com/categories/java)
+Также прошу обратить внимание, что бот возможно не будет работать в текущем состоянии, так как он был заморожен в процессе переписывания на новый Twitch API. 
